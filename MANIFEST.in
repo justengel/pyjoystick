@@ -1,0 +1,27 @@
+recursive-include */resources *
+recursive-include */templates *
+recursive-include */sdl2_win64 *
+recursive-include */sdl2_win32 *
+recursive-include bin *
+recursive-include test *
+recursive-include docs *
+recursive-include LICENSES *
+
+include LICENSE*
+include MANIFEST.in
+include README*
+include *requirements.txt
+
+recursive-include *tutorial*.pdf
+recursive-include *Tutorial*.pdf
+recursive-include *TUTORIAL*.pdf
+global-exclude *tutorial*.docx
+global-exclude *Tutorial*.docx
+global-exclude *TUTORIAL*.docx
+
+include setup.py
+include setup.cfg
+
+global-exclude __pycache__
+global-exclude __pycache__/*
+global-exclude *.exe
