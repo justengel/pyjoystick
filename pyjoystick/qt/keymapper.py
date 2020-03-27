@@ -1,0 +1,263 @@
+"""
+    bt_controller.keymapper
+    SeaLandAire Technologies
+    @author: jengel
+"""
+import threading
+from qtpy import QtCore, QtGui, QtWidgets
+
+from pyjoystick.interface import Joystick
+from pyjoystick.qt.widgets import AxisWidget, ButtonWidget, HatWidget, SpinSlider, LED
+
+
+class JoystickKeyMapper(QtWidgets.QWidget):
+    """Help the user map the keys."""
+
+    Joystick = Joystick
+
+    def __init__(self, joystick=None, parent=None, event_mngr=None):
+        super().__init__(parent)
+
+        self._event_mngr = None
+        self.joystick = None
+        self._joysticks = []
+        self.btns_per_row = 5
+
+        # Layout
+        self.main_layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.main_layout)
+
+        # Joystick name
+        self.name_lbl = QtWidgets.QLabel("Joystick Name")
+        self.name_lbl.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        font = self.name_lbl.font()
+        font.setPointSize(12)
+#         font.setWeight(QtWidgets.QFont.Bold)
+        self.name_lbl.setFont(font)
+        self.name_lay = QtWidgets.QHBoxLayout()
+        self.name_lay.addWidget(self.name_lbl, alignment=QtCore.Qt.AlignLeft)
+        self.main_layout.addLayout(self.name_lay)
+        
+        # Button layouts
+        lbl = QtWidgets.QLabel("Axes (Analog sticks or triggers):")
+        lbl.setToolTip("Values are scaled -100.0 to 100.0 for the slider display.\n"
+                       "real values are -1.0 to 1.0")
+        self.main_layout.addWidget(lbl)
+        self.axis_layout = QtWidgets.QHBoxLayout()
+        self.main_layout.addLayout(self.axis_layout)
+
+        self.main_layout.addWidget(QtWidgets.QLabel("Buttons:"))
+        self.button_layout = QtWidgets.QVBoxLayout()
+        self.main_layout.addLayout(self.button_layout)
+
+        self.main_layout.addWidget(QtWidgets.QLabel("Hats (D-pads):"))
+        self.hat_layout = QtWidgets.QHBoxLayout()
+        self.main_layout.addLayout(self.hat_layout)
+
+        self.main_layout.addWidget(QtWidgets.QLabel("Track Balls:"))
+        self.ball_layout = QtWidgets.QHBoxLayout()
+        self.main_layout.addLayout(self.ball_layout)
+
+        # Select joystick button
+        self.sel_btn = QtWidgets.QPushButton("Select Joystick")
+        self.sel_btn.setSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Maximum)
+        self.sel_btn.clicked.connect(self.select_joystick)
+        self.name_lay.addWidget(self.sel_btn, alignment=QtCore.Qt.AlignLeft)
+        self._dialog = None
+
+        # Items
+        self._lock = threading.Lock()
+        if joystick is not None:
+            self.sel_btn.hide()
+            self.set_joystick(joystick)
+
+        if event_mngr is not None:
+            self.set_event_mngr(event_mngr)
+    # end Constructor
+
+    def get_event_mngr(self):
+        """Return the event manager."""
+        return self._event_mngr
+
+    def set_event_mngr(self, value):
+        """Set the event manager."""
+        self._event_mngr = value
+        try:
+            self._event_mngr.add_joystick = self.add_joystick
+            self._event_mngr.remove_joystick = self.remove_joystick
+            self._event_mngr.handle_key_event = self.handle_key_event
+            self._event_mngr.start()
+        except:
+            pass
+
+    event_mngr = property(get_event_mngr, set_event_mngr)
+
+    def add_joystick(self, joy):
+        """Add the joystick that was found."""
+        self._joysticks.append(joy)
+
+    def remove_joystick(self, joy):
+        """Remove teh joystick that was removed."""
+        try:
+            self._joysticks.remove(joy)
+        except:
+            pass
+
+    def handle_key_event(self, key):
+        """Handle the given key that an event occurred on."""
+        if self.joystick != key.joystick:
+            return
+
+        if key.keytype == key.AXIS:
+            self.set_axes_values(key)
+        elif key.keytype == key.BUTTON:
+            self.set_button_values(key)
+        elif key.keytype == key.HAT:
+            self.set_hat_values(key)
+        elif key.keytype == key.BALL:
+            self.set_ball_values(key)
+
+    def get_joysticks(self):
+        """Return a list of joysticks."""
+        return self._joysticks
+
+    def select_joystick(self):
+        """Select a gamepad if there is no joystick selected."""
+        try: self._dialog.close()
+        except AttributeError: pass
+
+        self._dialog = QtWidgets.QDialog()
+        layout = QtWidgets.QVBoxLayout()
+        self._dialog.setLayout(layout)
+        
+        # Joysticks
+        btngroup = QtWidgets.QButtonGroup()
+        btngroup.setExclusive(True)
+        for item in self.get_joysticks():
+            btn = QtWidgets.QRadioButton(item.get_name())
+            layout.addWidget(btn)
+            btngroup.addButton(btn)
+
+        # Accept method        
+        def select():
+            btn = btngroup.checkedButton()
+            joystick = None
+            if btn is not None:
+                name = btn.text()
+                for joy in self.get_joysticks():
+                    if joy.get_name() == name:
+                        joystick = joy
+                        break
+            self.set_joystick(joystick)
+            self._dialog.close()
+
+        # Buttons
+        accept = QtWidgets.QPushButton("Select")
+        accept.clicked.connect(select)
+        cancel = QtWidgets.QPushButton("Cancel")
+        cancel.clicked.connect(self._dialog.close)
+
+        # Button layout
+        hlay = QtWidgets.QHBoxLayout()
+        hlay.addWidget(accept, alignment=QtCore.Qt.AlignRight)
+        hlay.addWidget(cancel, alignment=QtCore.Qt.AlignRight)
+        layout.addLayout(hlay)
+        self._dialog.show()
+
+    def _clear_layout(self, layout):
+        """Clear a layout."""
+        while layout.itemAt(0) is not None:
+            item = layout.takeAt(0)
+            try:
+                obj = item.widget()
+                if obj is None:
+                    obj = item.layout()
+                    self._clear_layout(obj)
+                    obj.setParent(None)
+                    obj.deleteLater()
+                else:
+                    obj.close()
+                    obj.setParent(None)
+                    obj.deleteLater()
+            except AttributeError:
+                pass
+            del item
+
+    def removeWidgets(self):
+        """Remove all of the testing widgets."""
+        self._clear_layout(self.axis_layout)
+        self._clear_layout(self.button_layout)
+        self._clear_layout(self.hat_layout)
+        self._clear_layout(self.ball_layout)
+
+    def createWidgets(self, joystick=None):
+        """Initialize the widgets."""
+        self.removeWidgets()
+
+        for i in range(joystick.get_numaxes()):
+            widg = AxisWidget("Axis "+str(i))
+            self.axis_layout.addWidget(widg)
+
+        btn_lay = []
+        for i in range(joystick.get_numbuttons()):
+            if (i % self.btns_per_row) == 0:
+                btn_lay.append(QtWidgets.QHBoxLayout())
+                self.button_layout.addLayout(btn_lay[-1])
+            widg = ButtonWidget("Button "+str(i)+":")
+            btn_lay[-1].addWidget(widg)
+
+        for i in range(joystick.get_numhats()):
+            widg = HatWidget("Hat "+str(i)+":")
+            self.hat_layout.addWidget(widg)
+
+        for i in range(joystick.get_numballs()):
+            widg = HatWidget("Ball "+str(i)+":")
+            self.ball_layout.addWidget(widg)
+
+    def set_joystick(self, joystick):
+        """Set the active joystick."""
+        if joystick is None:
+            self.removeWidgets()
+            return
+
+        self.joystick = joystick
+        self.createWidgets(self.joystick)
+        try:
+            self.name_lbl.setText(self.joystick.get_name())
+        except:
+            pass
+
+    def set_axes_values(self, key):
+        self.axis_layout.itemAt(key.number).widget().setValue(key.get_value())
+
+    def set_button_values(self, key):
+        btn_lay = self.button_layout.itemAt(int(key.number // self.btns_per_row)).layout()
+        btn_lay.itemAt(key.number % self.btns_per_row).widget().setValue(key.get_value())
+
+    def set_hat_values(self, key):
+        self.hat_layout.itemAt(key.number).widget().setValue(key.get_value())
+
+    def set_ball_values(self, key):
+        self.ball_layout.itemAt(key.number).widget().setValue(key.get_value())
+
+    def closeEvent(self, *args, **kwargs):
+        try:
+            self._event_mngr.stop()
+        except:
+            pass
+        return QtWidgets.QWidget.closeEvent(self, *args, **kwargs)
+
+
+if __name__ == "__main__":
+    import sys
+    from pyjoystick import ThreadEventManager, ButtonHatRepeater, MultiprocessingEventManager
+    from pyjoystick.sdl2 import Joystick, run_event_loop
+    # from pyjoystick.pygame import Joystick, run_event_loop
+
+    app = QtWidgets.QApplication([])
+
+    # w = JoystickKeyMapper(event_mngr=ThreadEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
+    w = JoystickKeyMapper(event_mngr=MultiprocessingEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
+    w.show()
+
+    sys.exit(app.exec_())
