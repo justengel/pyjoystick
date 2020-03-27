@@ -25,8 +25,8 @@ class ThreadEventManager(object):
         self.event_loop = event_loop
         self.joysticks = Stash()
         self.alive = alive
-        self.thread = None
-        self.process_tmr = None
+        self.proc = None
+        self.worker = None
         self.event_lock = threading.RLock()
         self.event_list = Stash()
 
@@ -146,16 +146,17 @@ class ThreadEventManager(object):
         self.stop()
 
         self.alive.set()
-        self.thread = threading.Thread(target=self.run,
-                                       args=(self.event_loop, self.save_joystick, self.delete_joystick,
-                                             self.save_key_event),
-                                       kwargs={'alive': self.is_running, 'button_repeater': self.button_repeater})
-        self.thread.daemon = True
-        self.thread.start()
+        self.proc = threading.Thread(target=self.run,
+                                     args=(self.event_loop, self.save_joystick, self.delete_joystick,
+                                           self.save_key_event),
+                                     kwargs={'alive': self.is_running, 'button_repeater': self.button_repeater})
+        self.proc.daemon = True
+        self.proc.start()
 
-        self.process_tmr = PeriodicThread(self.activity_timeout, self.process_events)
-        self.process_tmr.daemon = True
-        self.process_tmr.start()
+        self.worker = PeriodicThread(self.activity_timeout, self.process_events)
+        self.worker.alive = self.alive  # stop when this event stops
+        self.worker.daemon = True
+        self.worker.start()
 
     def stop(self):
         """Stop running the event loop."""
@@ -164,10 +165,15 @@ class ThreadEventManager(object):
         except:
             pass
         try:
-            self.thread.join(0)
+            self.proc.join(0)
         except:
             pass
-        self.thread = None
+        self.proc = None
+        try:
+            self.worker.join(0)
+        except:
+            pass
+        self.worker = None
 
     def __enter__(self):
         if not self.is_running():
@@ -177,6 +183,24 @@ class ThreadEventManager(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.stop()
         return exc_type is None
+
+    def __getstate__(self):
+        return {'activity_timeout': self.activity_timeout,
+                'button_repeater': self.button_repeater,
+                'event_loop': self.event_loop,
+                'joysticks': Stash(),
+                'alive': self.alive,
+                'proc': None,
+                'worker': None,
+                'event_list': Stash(),
+                }
+
+    def __setstate__(self, state):
+        for k, v in state.items():
+            setattr(self, k, v)
+
+        if getattr(self, 'event_lock', None) is None:
+            self.event_lock = threading.RLock()
 
 
 if __name__ == '__main__':

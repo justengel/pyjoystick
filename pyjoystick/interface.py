@@ -223,3 +223,24 @@ class Joystick(object):
 
     def __str__(self):
         return self.get_name()
+
+    def __getstate__(self):
+        return {
+            'joystick': None,
+            'identifier': self.identifier,
+            'name': self.name,
+            'numaxes': self.numaxes,
+            'numbuttons': self.numbuttons,
+            'numhats': self.numhats,
+            'numballs': self.numballs,
+
+            'axis': self.axis,
+            'button': self.button,
+            'hat': self.hat,
+            'ball': self.ball,
+            'keys': self.keys,
+            }
+
+    def __setstate__(self, state):
+        for k, v in state.items():
+            setattr(self, k, v)

@@ -11,4 +11,4 @@ except:
     run_sdl_loop = None
 
 from .run_thread import ThreadEventManager
-# from .run_process import MultiprocessingEventManager
+from .run_process import MultiprocessingEventManager
