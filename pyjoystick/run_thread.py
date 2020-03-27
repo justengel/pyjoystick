@@ -107,8 +107,7 @@ class ThreadEventManager(object):
     def process_events(self):
         """Process all of the saved events."""
         with self.event_lock:
-            li = self.event_list
-            self.event_list = []
+            li, self.event_list = self.event_list, []
 
             for k in li:
                 try:
