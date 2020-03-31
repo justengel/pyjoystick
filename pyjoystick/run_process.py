@@ -91,3 +91,4 @@ class MultiprocessingEventManager(ThreadEventManager):
         self.worker = threading.Thread(target=self.process_queue)
         self.worker.daemon = True
         self.worker.start()
+        return self
