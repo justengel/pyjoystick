@@ -1,5 +1,5 @@
+import time
 import threading
-from queue import Queue, Empty
 
 from pyjoystick.stash import Stash
 from pyjoystick.utils import PeriodicThread
@@ -10,12 +10,6 @@ class ThreadEventManager(object):
                  button_repeater=None, activity_timeout=0.01):
         super().__init__()
 
-        if add_joystick is not None:
-            self.add_joystick = add_joystick
-        if remove_joystick is not None:
-            self.remove_joystick = remove_joystick
-        if handle_key_event is not None:
-            self.handle_key_event = handle_key_event
         if alive is None:
             alive = threading.Event()
 
@@ -30,8 +24,14 @@ class ThreadEventManager(object):
         self.event_lock = threading.RLock()
         self.event_list = Stash()
 
-        if self.button_repeater is not None:
-            self.button_repeater = button_repeater
+        if add_joystick is not None:
+            self.add_joystick = add_joystick
+        if remove_joystick is not None:
+            self.remove_joystick = remove_joystick
+        if handle_key_event is not None:
+            self.handle_key_event = handle_key_event
+        if button_repeater is not None:
+            self.set_button_repeater(button_repeater)
 
     def add_joystick(self, joy):
         """Save the added joystick."""
@@ -45,19 +45,19 @@ class ThreadEventManager(object):
         """Function to handle key event happens"""
         pass
 
-    @property
-    def button_repeater(self):
+    def get_button_repeater(self):
         """Return the button repeater."""
         return self._button_repeater
 
-    @button_repeater.setter
-    def button_repeater(self, value):
+    def set_button_repeater(self, value):
         """Set the button repeater."""
         self._button_repeater = value
         try:
-            self.button_repeater.key_repeated = self._update_key_event
+            self._button_repeater.key_repeated = self._update_key_event
         except:
             pass
+
+    button_repeater = property(get_button_repeater, set_button_repeater)
 
     def save_joystick(self, joy):
         """Save the added joystick."""
@@ -118,6 +118,29 @@ class ThreadEventManager(object):
                 # Run the callback handler
                 self.handle_key_event(k)
 
+    def find_key(self, joysticks=None, timeout=float("inf")):
+        """Wait and return the next key that is pressed."""
+        if joysticks is None:
+            joysticks = []
+        elif not isinstance(joysticks, list):
+            joysticks = list(joysticks)
+
+        found_key = [None]
+
+        def filter_find_key(key):
+            if (len(joysticks) == 0 or key.joystick in joysticks) and found_key[0] is None:
+                found_key[0] = key
+
+        old_handle_key_event, self.handle_key_event = self.handle_key_event, filter_find_key
+
+        start = time.time()
+        while (time.time() - start) < timeout and found_key[0] is None:
+            time.sleep(0.01)
+
+        found_key = found_key[0]
+        self.handle_key_event = old_handle_key_event
+        return found_key
+
     def run(self, event_loop, add_joystick, remove_joystick, handle_key_event, alive=None, button_repeater=None):
         """Run the an event loop to process SDL Events.
 
@@ -157,6 +180,7 @@ class ThreadEventManager(object):
         self.worker.alive = self.alive  # stop when this event stops
         self.worker.daemon = True
         self.worker.start()
+        return self
 
     def stop(self):
         """Stop running the event loop."""
@@ -174,6 +198,7 @@ class ThreadEventManager(object):
         except:
             pass
         self.worker = None
+        return self
 
     def __enter__(self):
         if not self.is_running():

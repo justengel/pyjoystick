@@ -9,7 +9,7 @@ __all__ = ['Repeater', 'ButtonRepeater', 'HatRepeater', 'ButtonHatRepeater']
 class Repeater(object):
     """Scheduler to Manage multiple button repeats."""
 
-    def __init__(self, first_repeat_timeout=1.0, repeat_timeout=0.5, check_timeout=0.1, key_repeated=None,
+    def __init__(self, first_repeat_timeout=1.0, repeat_timeout=0.5, check_timeout=None, key_repeated=None,
                  get_key_hash=None):
         super().__init__()
 
@@ -31,19 +31,25 @@ class Repeater(object):
         """Add the Key to the event queue to be processed."""
         pass
 
-    @property
-    def check_timeout(self):
-        """Timeout for when the keys should repeat."""
+    def get_check_timeout(self):
+        """Return the timeout for the thread to check if the keys have repeated. By default this is half of the repeat
+        timeout.
+        """
+        if self._check_timeout is None:
+            return self.repeat_timeout / 2
         return self._check_timeout
 
-    @check_timeout.setter
-    def check_timeout(self, value):
-        """Timeout for when the keys should repeat."""
+    def set_check_timeout(self, value):
+        """Set the timeout for the thread to check if the keys have repeated. If None is given this will be half of the
+        repeat timeout.
+        """
         self._check_timeout = value
         try:
-            self.thread.interval = value
+            self.thread.interval = self.get_check_timeout()
         except:
             pass
+
+    check_timeout = property(get_check_timeout, set_check_timeout)
 
     @property
     def name(self):
