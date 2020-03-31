@@ -3,11 +3,22 @@
     SeaLandAire Technologies
     @author: jengel
 """
+import os
 import threading
 from qtpy import QtCore, QtGui, QtWidgets
 
 from pyjoystick.interface import Joystick
 from pyjoystick.qt.widgets import AxisWidget, ButtonWidget, HatWidget, SpinSlider, LED
+from pyjoystick.qt.keys_trigger import RESOURCE_DIR
+
+
+__all__ = ["JOYSTICK_ACTIVE_IMG", "JOYSTICK_INACTIVE_IMG", "JoystickKeyMapper"]
+
+
+# ========== ICONS ==========
+JOYSTICK_ACTIVE_IMG = os.path.join(RESOURCE_DIR, "gamepad_active.png")
+JOYSTICK_INACTIVE_IMG = os.path.join(RESOURCE_DIR, "gamepad_inactive.png")
+# ========== END ICONS ==========
 
 
 class JoystickKeyMapper(QtWidgets.QWidget):
@@ -19,7 +30,7 @@ class JoystickKeyMapper(QtWidgets.QWidget):
         super().__init__(parent)
 
         self._event_mngr = None
-        self.joystick = None
+        self._joystick = None
         self._joysticks = []
         self.btns_per_row = 5
 
@@ -214,31 +225,49 @@ class JoystickKeyMapper(QtWidgets.QWidget):
             widg = HatWidget("Ball "+str(i)+":")
             self.ball_layout.addWidget(widg)
 
+    def get_joystick(self):
+        """Return the active joystick."""
+        return self._joystick
+
     def set_joystick(self, joystick):
         """Set the active joystick."""
         if joystick is None:
             self.removeWidgets()
             return
 
-        self.joystick = joystick
-        self.createWidgets(self.joystick)
+        self._joystick = joystick
+        self.createWidgets(self._joystick)
         try:
-            self.name_lbl.setText(self.joystick.get_name())
+            self.name_lbl.setText(self._joystick.get_name())
         except:
             pass
 
+    joystick = property(get_joystick, set_joystick)
+
     def set_axes_values(self, key):
-        self.axis_layout.itemAt(key.number).widget().setValue(key.get_value())
+        try:
+            self.axis_layout.itemAt(key.number).widget().setValue(key.get_value())
+        except AttributeError:
+            pass
 
     def set_button_values(self, key):
-        btn_lay = self.button_layout.itemAt(int(key.number // self.btns_per_row)).layout()
-        btn_lay.itemAt(key.number % self.btns_per_row).widget().setValue(key.get_value())
+        try:
+            btn_lay = self.button_layout.itemAt(int(key.number // self.btns_per_row)).layout()
+            btn_lay.itemAt(key.number % self.btns_per_row).widget().setValue(key.get_value())
+        except AttributeError:
+            pass
 
     def set_hat_values(self, key):
-        self.hat_layout.itemAt(key.number).widget().setValue(key.get_value())
+        try:
+            self.hat_layout.itemAt(key.number).widget().setValue(key.get_value())
+        except AttributeError:
+            pass
 
     def set_ball_values(self, key):
-        self.ball_layout.itemAt(key.number).widget().setValue(key.get_value())
+        try:
+            self.ball_layout.itemAt(key.number).widget().setValue(key.get_value())
+        except AttributeError:
+            pass
 
     def closeEvent(self, *args, **kwargs):
         try:
@@ -250,14 +279,15 @@ class JoystickKeyMapper(QtWidgets.QWidget):
 
 if __name__ == "__main__":
     import sys
-    from pyjoystick import ThreadEventManager, ButtonHatRepeater, MultiprocessingEventManager
+    from pyjoystick import ThreadEventManager, ButtonHatRepeater
+    from pyjoystick.run_process import MultiprocessingEventManager
     from pyjoystick.sdl2 import Joystick, run_event_loop
     # from pyjoystick.pygame import Joystick, run_event_loop
 
     app = QtWidgets.QApplication([])
 
-    # w = JoystickKeyMapper(event_mngr=ThreadEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
-    w = JoystickKeyMapper(event_mngr=MultiprocessingEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
+    w = JoystickKeyMapper(event_mngr=ThreadEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
+    # w = JoystickKeyMapper(event_mngr=MultiprocessingEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
     w.show()
 
     sys.exit(app.exec_())

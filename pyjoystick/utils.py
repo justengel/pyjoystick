@@ -11,11 +11,15 @@ __all__ = ['is_py27', 'PYJOYSTICK_DIR', 'change_path', 'rescale', 'PeriodicThrea
 
 is_py27 = sys.version_info < (3, 0)
 
-if getattr(sys, 'frozen', False):
-    PYJOYSTICK_DIR = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
-else:
-    PYJOYSTICK_DIR = os.path.dirname(os.path.abspath(__file__))
-    
+PYJOYSTICK_DIR = os.path.dirname(sys.executable)
+try:
+    if getattr(sys, 'frozen', False):
+        PYJOYSTICK_DIR = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    else:
+        PYJOYSTICK_DIR = os.path.dirname(os.path.abspath(__file__))
+except (NameError, AttributeError, Exception):
+    pass
+
 
 @contextlib.contextmanager
 def change_path(path):

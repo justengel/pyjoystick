@@ -1,6 +1,9 @@
 from qtpy import QtCore
 
 
+__all__ = ["MousePanTilt"]
+
+
 class MousePanTilt(QtCore.QObject):
     """Event Filter for handling mouse gestures and clicks to triggering actions.
     """
