@@ -1,3 +1,4 @@
+import contextlib
 import time
 import threading
 
@@ -118,28 +119,70 @@ class ThreadEventManager(object):
                 # Run the callback handler
                 self.handle_key_event(k)
 
-    def find_key(self, joysticks=None, timeout=float("inf")):
-        """Wait and return the next key that is pressed."""
+    @contextlib.contextmanager
+    def run_during(self):
+        """Context manager to temporarily run the manager if the manager is not already running."""
+        if not self.is_running():
+            self.start()
+            yield
+            self.stop()
+        else:
+            yield
+
+    def wait(self, conditional=None, timeout=float('inf'), sleep_func=None):
+        """Wait for the given timeout or conditional function to return false.
+
+        Args:
+            conditional (callable)[None]: Callable that returns True to keep waiting.
+            timeout (float/int)[float('inf')]: Time for when to stop waiting.
+            sleep_func (callable)[None]: How to sleep and wait (ex. time.sleep(0.001)).
+        """
+        if sleep_func is None:
+            sleep_func = lambda: time.sleep(0.01)
+        if conditional is None:
+            conditional = lambda: True
+        elif not callable(conditional):
+            conditional = lambda: conditional
+
+        start = time.time()
+        while (time.time() - start) < timeout and conditional():
+            sleep_func()
+
+    def find_key(self, joysticks=None, timeout=float("inf"), sleep_func=None):
+        """Wait and return the next key that is pressed.
+
+        Args:
+            joysticks (list/Joystick)[None]: Joystick(s) to allow events for.
+            timeout (float/int)[float('inf')]: Timeout to wait.
+            sleep_func (callable)[None]: How to sleep and wait (time.sleep(0.01)).
+
+        Returns:
+            key (Key)[None]: If found return the first Key else return None.
+        """
         if joysticks is None:
             joysticks = []
         elif not isinstance(joysticks, list):
             joysticks = list(joysticks)
 
-        found_key = [None]
+        data = {'found key': None}
 
         def filter_find_key(key):
-            if (len(joysticks) == 0 or key.joystick in joysticks) and found_key[0] is None:
-                found_key[0] = key
+            if (len(joysticks) == 0 or key.joystick in joysticks) and data['found key'] is None:
+                data['found key'] = key
 
+        def is_not_found():
+            return data['found key'] is None
+
+        # Change the event handler
         old_handle_key_event, self.handle_key_event = self.handle_key_event, filter_find_key
 
-        start = time.time()
-        while (time.time() - start) < timeout and found_key[0] is None:
-            time.sleep(0.01)
+        with self.run_during():
+            self.wait(is_not_found, timeout, sleep_func)
 
-        found_key = found_key[0]
+        # Reset event handler
         self.handle_key_event = old_handle_key_event
-        return found_key
+
+        return data['found key']
 
     def run(self, event_loop, add_joystick, remove_joystick, handle_key_event, alive=None, button_repeater=None):
         """Run the an event loop to process SDL Events.
