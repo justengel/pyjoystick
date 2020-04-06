@@ -5,7 +5,7 @@ import os
 import sys
 import platform
 
-from pyjoystick.utils import PYJOYSTICK_DIR, change_path, rescale
+from pyjoystick.utils import PYJOYSTICK_DIR, deadband, change_path, rescale
 
 # ========== SDL2 Pathing ==========
 if 'windows' in platform.architecture()[1].lower():
@@ -304,6 +304,10 @@ def key_from_event(event, joystick=None):
             value = rescale(value, -32768, 32767, 0, 1)  # Make triggers rest at 0
         else:
             value = rescale(value, -32768, 32767, -1, 1)
+
+        db = getattr(joystick, 'deadband', 0)
+        if db:
+            value = deadband(value, db)
 
         return Key(Key.AXIS, event.jaxis.axis, value, joystick)
     elif event.type == sdl2.SDL_JOYHATMOTION:

@@ -6,7 +6,7 @@ import threading
 import contextlib
 
 
-__all__ = ['is_py27', 'PYJOYSTICK_DIR', 'change_path', 'rescale', 'PeriodicThread']
+__all__ = ['is_py27', 'PYJOYSTICK_DIR', 'deadband', 'change_path', 'rescale', 'PeriodicThread']
 
 
 is_py27 = sys.version_info < (3, 0)
@@ -19,6 +19,26 @@ try:
         PYJOYSTICK_DIR = os.path.dirname(os.path.abspath(__file__))
 except (NameError, AttributeError, Exception):
     pass
+
+
+def deadband(val, dead=0.2, scale=1):
+    """Return the deadband value for the controller Axis.
+
+    Args:
+        val (float): Raw controller value -1 to 1.
+        dead (float)[0.2]: Deadband value
+        scale (int) [1]: 100, 10, 1 indicates the range -100 to 100 ...
+    """
+    val = float(val)
+    dead = float(dead)
+    if val >= dead:
+        val -= dead
+    elif val <= -dead:
+        val += dead
+    else:
+        val = 0
+    val = (val/(scale-dead)) * scale
+    return val
 
 
 @contextlib.contextmanager

@@ -11,6 +11,15 @@ class KeyTypes:
     BALL = "Ball"
     ALL_KEYTYPES = ','.join((AXIS, BUTTON, HAT, BALL))
 
+    @classmethod
+    def has_keytype(cls, keytype, key_types):
+        try:
+            if keytype == cls.ALL_KEYTYPES or str(keytype) in key_types:
+                return True
+        except (TypeError, ValueError, Exception):
+            pass
+        return False
+
 
 class HatValues:
     HAT_CENTERED = 0
@@ -35,6 +44,7 @@ class Key(object):
     HAT = KeyTypes.HAT
     BALL = KeyTypes.BALL
     ALL_KEYTYPES = KeyTypes.ALL_KEYTYPES
+    has_keytype = staticmethod(KeyTypes.has_keytype)
 
     # HAT Values (Guessing they are more bit flags than enums.)
     HatValues = HatValues
@@ -138,6 +148,8 @@ class Joystick(object):
         self.hat = getattr(self, 'hat', Stash())
         self.ball = getattr(self, 'ball', Stash())
         self.keys = getattr(self, 'keys', Stash(self.axis + self.button + self.hat + self.ball))
+
+        self.deadband = getattr(self, 'deadband', 0.2)
 
         self.init_keys()
 

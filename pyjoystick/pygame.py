@@ -3,7 +3,7 @@ import sys
 import time
 import threading
 
-from pyjoystick.utils import PYJOYSTICK_DIR, change_path, rescale
+from pyjoystick.utils import PYJOYSTICK_DIR, deadband, change_path, rescale
 
 with change_path(PYJOYSTICK_DIR):
     # os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
@@ -169,7 +169,11 @@ def key_from_event(event, joystick=None):
     elif event.type == pygame.JOYBUTTONUP:
         return Key(Key.BUTTON, event.button, 0, joystick)
     elif event.type == pygame.JOYAXISMOTION:
-        return Key(Key.AXIS, event.axis, event.value, joystick)
+        value = event.value
+        db = getattr(joystick, 'deadband', 0)
+        if db:
+            value = deadband(value, db)
+        return Key(Key.AXIS, event.axis, value, joystick)
     elif event.type == pygame.JOYHATMOTION:
         value = HAT_CONVERTER.get(tuple(event.value), Key.HAT_CENTERED)
         return Key(Key.HAT, event.hat, value, joystick)

@@ -1,6 +1,6 @@
 from .__meta__ import version as __version__
 
-from .utils import PYJOYSTICK_DIR, change_path, rescale, PeriodicThread
+from .utils import PYJOYSTICK_DIR, deadband, change_path, rescale, PeriodicThread
 from .button_repeater import Repeater, ButtonRepeater, HatRepeater, ButtonHatRepeater
 from .interface import Key, Joystick
 

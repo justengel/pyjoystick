@@ -148,11 +148,12 @@ class ThreadEventManager(object):
         while (time.time() - start) < timeout and conditional():
             sleep_func()
 
-    def find_key(self, joysticks=None, timeout=float("inf"), sleep_func=None):
+    def find_key(self, joysticks=None, key_types=None, timeout=float("inf"), sleep_func=None):
         """Wait and return the next key that is pressed.
 
         Args:
             joysticks (list/Joystick)[None]: Joystick(s) to allow events for.
+            key_types (list/KeyTypes)[None]: List of key type. Found with Key.KeyTypes.Axis
             timeout (float/int)[float('inf')]: Timeout to wait.
             sleep_func (callable)[None]: How to sleep and wait (time.sleep(0.01)).
 
@@ -163,11 +164,16 @@ class ThreadEventManager(object):
             joysticks = []
         elif not isinstance(joysticks, list):
             joysticks = list(joysticks)
+        if key_types is None:
+            key_types = []
 
         data = {'found key': None}
 
         def filter_find_key(key):
-            if (len(joysticks) == 0 or key.joystick in joysticks) and data['found key'] is None:
+            is_joystick = len(joysticks) == 0 or key.joystick in joysticks
+            is_key_type = len(key_types) == 0 or key.has_keytype(key.keytype, key_types)
+            is_valid_value = key.keytype != key.AXIS or abs(key.value) > 0
+            if is_joystick and is_key_type and is_valid_value and data['found key'] is None:
                 data['found key'] = key
 
         def is_not_found():
