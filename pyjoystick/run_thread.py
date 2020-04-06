@@ -133,9 +133,9 @@ class ThreadEventManager(object):
         """Wait for the given timeout or conditional function to return false.
 
         Args:
-            conditional (callable)[None]: Callable that returns True to keep waiting.
+            conditional (callable)[None]: Callable that returns True to keep waiting. If raises error stop waiting.
             timeout (float/int)[float('inf')]: Time for when to stop waiting.
-            sleep_func (callable)[None]: How to sleep and wait (ex. time.sleep(0.001)).
+            sleep_func (callable)[None]: How to sleep and wait (ex. time.sleep(0.001)). If raises error stop waiting.
         """
         if sleep_func is None:
             sleep_func = lambda: time.sleep(0.01)
@@ -145,8 +145,11 @@ class ThreadEventManager(object):
             conditional = lambda: conditional
 
         start = time.time()
-        while (time.time() - start) < timeout and conditional():
-            sleep_func()
+        try:
+            while (time.time() - start) < timeout and conditional():
+                sleep_func()
+        except (ValueError, TypeError, Exception):  # If any error occurs stop waiting.
+            pass
 
     def find_key(self, joysticks=None, key_types=None, timeout=float("inf"), sleep_func=None):
         """Wait and return the next key that is pressed.
