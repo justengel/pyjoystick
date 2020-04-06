@@ -218,6 +218,14 @@ class Joystick(object):
         """Return the current value for the given axes."""
         return self.ball[number].get_value()
 
+    def get_deadband(self):
+        """Return the deadband for this joystick axis."""
+        return self.deadband
+
+    def set_deadband(self, value):
+        """Return the deadband for this joystick axis."""
+        self.deadband = value
+
     def __eq__(self, other):
         name, ident, joystick = self.get_name(), self.get_id(), self.joystick
         try:
@@ -251,6 +259,8 @@ class Joystick(object):
             'hat': self.hat,
             'ball': self.ball,
             'keys': self.keys,
+
+            'deadband': self.deadband
             }
 
     def __setstate__(self, state):
