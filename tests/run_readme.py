@@ -1,15 +1,6 @@
-==========
-pyjoystick
-==========
-
-Python joystick event handler.
 
 
-Simple Example
-==============
-
-.. code-block:: python
-
+def run_simple_example():
     from pyjoystick.sdl2 import Key, Joystick, run_event_loop
 
     def print_add(joy):
@@ -24,14 +15,7 @@ Simple Example
     run_event_loop(print_add, print_remove, key_received)
 
 
-Qt Integration
-==============
-
-The code below displays a label with the most recent key's value.
-A green ball will move around as you press the HAT button on the controller.
-
-.. code-block:: python
-
+def run_qt_integration():
     # App with a green ball in the center that moves when you press the HAT buttons
     import pyjoystick
     from pyjoystick.sdl2 import Key, Joystick, run_event_loop
@@ -131,3 +115,8 @@ A green ball will move around as you press the HAT button on the controller.
     main.layout().addWidget(btn, alignment=QtCore.Qt.AlignTop)
 
     app.exec_()
+
+
+if __name__ == '__main__':
+    # run_simple_example()
+    run_qt_integration()
