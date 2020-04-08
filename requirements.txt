@@ -1,2 +1,5 @@
 pysdl2>=0.9.6
 pygame>=1.9.2
+
+QtPy>=1.9.0
+qt_thread_updater>=0.0.1

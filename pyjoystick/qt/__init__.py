@@ -1,4 +1,4 @@
-from .widget_updater import get_updater, set_updater, ThreadUpdater
+from .widget_updater import get_updater, set_updater, cleanup_app, ThreadUpdater
 from .widgets import AxisWidget, ButtonWidget, HatWidget, SpinSlider, LED
 
 from .keys_trigger import RESOURCE_DIR, KEYBOARD_ACTIVE_IMG, KEYBOARD_INACTIVE_IMG, \

@@ -58,7 +58,7 @@ if __name__ == "__main__":
           author=author,
           author_email=author_email,
 
-          license='Proprietary',
+          license='MIT',
           platforms='any',
           classifiers=['Programming Language :: Python',
                        'Programming Language :: Python :: 3',
@@ -81,6 +81,7 @@ if __name__ == "__main__":
               ],
           extras_require={
               'pygame': ['pygame>=1.9.2'],
+              'qt': ['qt_thread_updater>=0.0.1', 'QtPy>=1.9.0']
               },
 
           # entry_points={
