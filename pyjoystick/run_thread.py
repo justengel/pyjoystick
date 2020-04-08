@@ -125,12 +125,16 @@ class ThreadEventManager(object):
             else:
                 self.event_latest[key] = value
 
-    def process_events(self):
-        """Process all of the saved events."""
+    def clear_key_events(self):
+        """Clear all of the key events."""
         with self.event_lock:
             buttons, self.event_buttons = self.event_buttons, Stash()
             latest, self.event_latest = self.event_latest, {}
+        return buttons, latest
 
+    def process_events(self):
+        """Process all of the saved events."""
+        buttons, latest = self.clear_key_events()
         for key in buttons:
             self.handle_key_event(key)
         for key, value in latest.items():
@@ -262,6 +266,11 @@ class ThreadEventManager(object):
         except:
             pass
         try:
+            # Try pumping an event on queue to break out of the wait condition
+            self.event_loop.stop_event_wait()
+        except:
+            pass
+        try:
             self.proc.join(0)
         except:
             pass
@@ -271,6 +280,10 @@ class ThreadEventManager(object):
         except:
             pass
         self.worker = None
+        try:
+            self.clear_key_events()
+        except:
+            pass
         return self
 
     def __enter__(self):

@@ -13,7 +13,7 @@ from pyjoystick.stash import Stash
 from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 
-__all__ = ['Key', 'Joystick', 'run_event_loop',
+__all__ = ['Key', 'Joystick', 'run_event_loop', 'stop_event_wait',
            'get_init', 'init', 'quit', 'key_from_event',
            'refresh_joysticks']
 
@@ -226,6 +226,14 @@ def get_events():
         return pygame.event.get()
 
 
+def stop_event_wait():
+    """Post an event to break out of the event loop wait."""
+    try:
+        pygame.event.post(pygame.event.Event(pygame.USEREVENT, {}))  # Break out of wait
+    except Exception:
+        pass
+
+
 def run_event_loop(add_joystick, remove_joystick, handle_key_event, alive=None, refresh_timeout=2, **kwargs):
     """Main function to run and handle events.
 
@@ -269,3 +277,7 @@ def run_event_loop(add_joystick, remove_joystick, handle_key_event, alive=None, 
                 time.sleep(0.01)
         except:
             pass
+
+
+# Attach a way to stop waiting by posting an event
+run_event_loop.stop_event_wait = stop_event_wait

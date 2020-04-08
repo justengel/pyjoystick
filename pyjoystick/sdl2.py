@@ -22,7 +22,7 @@ from pyjoystick.stash import Stash
 from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 
-__all__ = ['Key', 'Joystick', 'run_event_loop',
+__all__ = ['Key', 'Joystick', 'run_event_loop', 'stop_event_wait',
            'get_init', 'init', 'quit', 'key_from_event',
            'get_guid', 'get_mapping', 'get_mapping_name', 'is_trigger']
 
@@ -313,6 +313,19 @@ def key_from_event(event, joystick=None):
     return None
 
 
+def stop_event_wait():
+    """Post an event to break out of the event loop wait."""
+    try:
+        user_event = sdl2.SDL_Event()
+        user_event.type = sdl2.SDL_USEREVENT
+        user_event.user.code = 2
+        user_event.user.data1 = None
+        user_event.user.data2 = None
+        sdl2.SDL_PushEvent(ctypes.byref(user_event))
+    except:
+        pass
+
+
 def run_event_loop(add_joystick, remove_joystick, handle_key_event, alive=None, **kwargs):
     """Run the an event loop to process SDL Events.
 
@@ -352,3 +365,7 @@ def run_event_loop(add_joystick, remove_joystick, handle_key_event, alive=None, 
                 key = key_from_event(event, joy)
                 if key is not None:
                     handle_key_event(key)
+
+
+# Attach a way to stop waiting by posting an event
+run_event_loop.stop_event_wait = stop_event_wait
