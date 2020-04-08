@@ -166,7 +166,10 @@ class ThreadEventManager(object):
         if joysticks is None:
             joysticks = []
         elif not isinstance(joysticks, list):
-            joysticks = list(joysticks)
+            try:
+                joysticks = list(joysticks)  # convert tuple to list
+            except (TypeError, Exception):
+                joysticks = [joysticks]  # Put a single object in a list
         if key_types is None:
             key_types = []
 
