@@ -244,6 +244,9 @@ class Joystick(object):
     def __str__(self):
         return self.get_name()
 
+    def __hash__(self):
+        return hash('{} {}'.format(self.identifier, self.name))
+
     def __getstate__(self):
         return {
             'joystick': None,
