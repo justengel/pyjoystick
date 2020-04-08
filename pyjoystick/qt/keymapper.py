@@ -249,6 +249,15 @@ class JoystickKeyMapper(QtWidgets.QWidget):
             self.removeWidgets()
             return
 
+        # Try to get the proper joystick for this event loop
+        try:
+            event_mngr = self.get_event_mngr()
+            if joystick not in event_mngr.joysticks:
+                event_mngr.save_joystick(joystick)
+            joystick = event_mngr.joysticks[joystick]
+        except (AttributeError, IndexError, KeyError, Exception):
+            pass
+
         self._joystick = joystick
         self.createWidgets(self._joystick)
         try:
