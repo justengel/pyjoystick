@@ -3,12 +3,12 @@ import time
 import threading
 
 from pyjoystick.stash import Stash
-from pyjoystick.utils import PeriodicThread
+from pyjoystick.utils import PeriodicThread, deadband
 
 
 class ThreadEventManager(object):
     def __init__(self, event_loop=None, add_joystick=None, remove_joystick=None, handle_key_event=None, alive=None,
-                 button_repeater=None, activity_timeout=0.01):
+                 button_repeater=None, activity_timeout=1/30):
         super().__init__()
 
         if alive is None:
@@ -23,7 +23,8 @@ class ThreadEventManager(object):
         self.proc = None
         self.worker = None
         self.event_lock = threading.RLock()
-        self.event_list = Stash()
+        self.event_buttons = Stash()
+        self.event_latest = {}
 
         if add_joystick is not None:
             self.add_joystick = add_joystick
@@ -85,6 +86,16 @@ class ThreadEventManager(object):
         except:
             pass
 
+        # Calculate deadband after a static joystick was set
+        dead = getattr(key.joystick, 'deadband', 0)
+        if dead:
+            key.value = deadband(key.value, dead)
+
+        # Check if axis is still at 0 (No change due to deadband) to reduce number of events
+        is_axis_zero = key.keytype == key.AXIS and key.value == 0
+        if is_axis_zero and key.joystick and key.joystick.get_axis(key.number) == 0:
+            return
+
         try:
             self.button_repeater.set(key)
         except:
@@ -94,6 +105,7 @@ class ThreadEventManager(object):
 
     def _update_key_event(self, key):
         """Update the event list from the key event."""
+        value = key.value
         with self.event_lock:
             try:
                 joy = self.joysticks[key.joystick]
@@ -101,34 +113,27 @@ class ThreadEventManager(object):
             except:
                 pass
 
-            # Ignore multiple Axis keys which are still 0 (this with deadband helps reduce the number of events).
-            is_axis_zero = (key.keytype == key.AXIS and key.value == 0)
-            is_joy_axis_zero = (key.joystick and key.joystick.get_numaxes() > key.number and
-                                key.joystick.get_axis(key.number) == 0)
-            if is_axis_zero and is_joy_axis_zero:
-                return
-
             try:
                 key.joystick.update_key(key)
             except:
                 pass
 
-            if key.keytype == key.BUTTON or key not in self.event_list:
-                self.event_list.append(key)
+            if key.keytype == key.BUTTON:
+                self.event_buttons.append(key)
+            else:
+                self.event_latest[key] = value
 
     def process_events(self):
         """Process all of the saved events."""
         with self.event_lock:
-            li, self.event_list = self.event_list, []
+            buttons, self.event_buttons = self.event_buttons, Stash()
+            latest, self.event_latest = self.event_latest, {}
 
-            for k in li:
-                try:
-                    k.update_value(k.joystick)  # get the most recent joystick value
-                except:
-                    pass
-
-                # Run the callback handler
-                self.handle_key_event(k)
+        for key in buttons:
+            self.handle_key_event(key)
+        for key, value in latest.items():
+            key.value = value
+            self.handle_key_event(key)
 
     @contextlib.contextmanager
     def run_during(self):
@@ -283,7 +288,8 @@ class ThreadEventManager(object):
                 'alive': self.alive,
                 'proc': None,
                 'worker': None,
-                'event_list': Stash(),
+                'event_buttons': Stash(),
+                'event_latest': {},
                 }
 
     def __setstate__(self, state):

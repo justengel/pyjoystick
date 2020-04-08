@@ -261,7 +261,6 @@ class JoystickKeyMapper(QtWidgets.QWidget):
     def set_deadband(self, value):
         try:
             self.joystick.set_deadband(value)
-            print(self.joystick.deadband)
         except:
             pass
 
