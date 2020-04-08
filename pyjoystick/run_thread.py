@@ -7,6 +7,9 @@ from pyjoystick.utils import PeriodicThread, deadband
 
 
 class ThreadEventManager(object):
+
+    JOYSTICK_PROXY = None
+
     def __init__(self, event_loop=None, add_joystick=None, remove_joystick=None, handle_key_event=None, alive=None,
                  button_repeater=None, activity_timeout=1/30):
         super().__init__()
@@ -63,6 +66,8 @@ class ThreadEventManager(object):
 
     def save_joystick(self, joy):
         """Save the added joystick."""
+        if self.JOYSTICK_PROXY:
+            joy = self.JOYSTICK_PROXY(joy)
         self.joysticks.append(joy)
 
         # Run the callback handler
@@ -110,12 +115,6 @@ class ThreadEventManager(object):
         """Update the event list from the key event."""
         value = key.value
         with self.event_lock:
-            try:
-                joy = self.joysticks[key.joystick]
-                key.joystick = joy
-            except:
-                pass
-
             try:
                 key.joystick.update_key(key)
             except:
