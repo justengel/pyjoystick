@@ -87,14 +87,17 @@ class ThreadEventManager(object):
             pass
 
         # Calculate deadband after a static joystick was set
-        dead = getattr(key.joystick, 'deadband', 0)
-        if dead:
-            key.value = deadband(key.value, dead)
+        if key.keytype == key.AXIS:
+            dead = getattr(key.joystick, 'deadband', 0)
+            if dead:
+                key.value = deadband(key.value, dead)
 
-        # Check if axis is still at 0 (No change due to deadband) to reduce number of events
-        is_axis_zero = key.keytype == key.AXIS and key.value == 0
-        if is_axis_zero and key.joystick and key.joystick.get_axis(key.number) == 0:
-            return
+            # Check if axis is still at 0 (No change due to deadband) to reduce number of events
+            try:
+                if key.value == 0 and key.joystick.get_axis(key.number) == 0:
+                    return
+            except (AttributeError, IndexError, Exception):
+                pass
 
         try:
             self.button_repeater.set(key)
