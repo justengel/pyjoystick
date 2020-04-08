@@ -98,7 +98,18 @@ class ThreadEventManager(object):
             try:
                 joy = self.joysticks[key.joystick]
                 key.joystick = joy
-                joy.update_key(key)
+            except:
+                pass
+
+            # Ignore multiple Axis keys which are still 0 (this with deadband helps reduce the number of events).
+            is_axis_zero = (key.keytype == key.AXIS and key.value == 0)
+            is_joy_axis_zero = (key.joystick and key.joystick.get_numaxes() > key.number and
+                                key.joystick.get_axis(key.number) == 0)
+            if is_axis_zero and is_joy_axis_zero:
+                return
+
+            try:
+                key.joystick.update_key(key)
             except:
                 pass
 
@@ -112,7 +123,7 @@ class ThreadEventManager(object):
 
             for k in li:
                 try:
-                    k.update_value(self.joysticks[k.joystick])
+                    k.update_value(k.joystick)  # get the most recent joystick value
                 except:
                     pass
 
