@@ -189,7 +189,7 @@ class ThreadEventManager(object):
         def filter_find_key(key):
             is_joystick = len(joysticks) == 0 or key.joystick in joysticks
             is_key_type = len(key_types) == 0 or key.has_keytype(key.keytype, key_types)
-            is_valid_value = key.keytype != key.AXIS or abs(key.value) > 0
+            is_valid_value = abs(key.value) > 0.5
             if is_joystick and is_key_type and is_valid_value and data['found key'] is None:
                 data['found key'] = key
 
