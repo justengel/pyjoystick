@@ -30,13 +30,19 @@ def deadband(val, dead=0.2, scale=1):
         scale (int) [1]: 100, 10, 1 indicates the range -100 to 100 ...
     """
     val = float(val)
-    dead = float(dead)
+    dead = abs(float(dead))
+
+    # Check if the deadband is the same as the scale
+    if dead == scale:
+        dead = scale * 0.99
+
     if val >= dead:
         val -= dead
     elif val <= -dead:
         val += dead
     else:
         val = 0
+
     val = (val/(scale-dead)) * scale
     return val
 
