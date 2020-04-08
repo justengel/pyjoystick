@@ -88,21 +88,26 @@ class Key(object):
         return self.__class__(self.keytype, self.number, self.value, self.joystick,
                               is_repeat=False, override=self.override)
 
+    @property
+    def keyname(self):
+        """Return the keytype and number of the key as a string."""
+        return '{} {}'.format(self.keytype, self.number)
+
     def __str__(self):
         if self.joystick:
-            return '{}: {} {}'.format(self.joystick, self.keytype, self.number)
+            return '{}: {}'.format(self.joystick, self.keyname)
         else:
-            return '{} {}'.format(self.keytype, self.number)
+            return self.keyname
 
     def __repr__(self):
         if self.joystick:
-            return '<{module}.{name} {joystick}: {keytype} {number} at {id}>'.format(
+            return '<{module}.{name} {joystick}: {keyname} at {id}>'.format(
                     module=self.__module__, name=self.__class__.__name__, id=id(self),
-                    joystick=self.joystick, keytype=self.keytype, number=self.number)
+                    joystick=self.joystick, keyname=self.keyname)
         else:
-            return '<{module}.{name} {keytype} {number} at {id}>'.format(
+            return '<{module}.{name} {keyname} at {id}>'.format(
                     module=self.__module__, name=self.__class__.__name__, id=id(self),
-                    joystick=self.joystick, keytype=self.keytype, number=self.number)
+                    joystick=self.joystick, keyname=self.keyname)
 
     def __hash__(self):
         return hash(str(self))
