@@ -45,6 +45,9 @@ class BindKeys(QtCore.QObject):
 
     keys_pressed = QtCore.Signal(collections.OrderedDict)
 
+    KEYBOARD_ACTIVE_IMG = KEYBOARD_ACTIVE_IMG
+    KEYBOARD_INACTIVE_IMG = KEYBOARD_INACTIVE_IMG
+
     DEFAULT_KEYS = collections.OrderedDict()
     DEFAULT_TRANSLATOR = {} # Translate keyboard keys to key names or (key names, modifier)
 
@@ -67,12 +70,12 @@ class BindKeys(QtCore.QObject):
     def init_icon(self):
         """Create the icon."""
         try:
-            self._active_icon = QtGui.QIcon(KEYBOARD_ACTIVE_IMG)
+            self._active_icon = QtGui.QIcon(self.KEYBOARD_ACTIVE_IMG)
         except:
             self._active_icon = QtGui.QIcon()
             
         try:
-            self._inactive_icon = QtGui.QIcon(KEYBOARD_INACTIVE_IMG)
+            self._inactive_icon = QtGui.QIcon(self.KEYBOARD_INACTIVE_IMG)
         except:
             self._inactive_icon = QtGui.QIcon()
  
