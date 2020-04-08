@@ -48,6 +48,18 @@ class JoystickKeyMapper(QtWidgets.QWidget):
         self.name_lay = QtWidgets.QHBoxLayout()
         self.name_lay.addWidget(self.name_lbl, alignment=QtCore.Qt.AlignLeft)
         self.main_layout.addLayout(self.name_lay)
+
+        self.deadband_input = QtWidgets.QDoubleSpinBox()
+        self.deadband_input.setToolTip('Give the joystick some dead space for the analog sticks.\n'
+                                       'This helps analog sticks rest at 0.')
+        self.deadband_input.setMinimum(0)
+        self.deadband_input.setMaximum(1)
+        self.deadband_input.setDecimals(4)
+        self.deadband_input.valueChanged.connect(self.set_deadband)
+        self.deadband_layout = QtWidgets.QFormLayout()
+        self.deadband_layout.addRow(QtWidgets.QLabel('Deadband: '), self.deadband_input)
+        self.main_layout.addLayout(self.deadband_layout)
+
         
         # Button layouts
         lbl = QtWidgets.QLabel("Axes (Analog sticks or triggers):")
@@ -205,6 +217,8 @@ class JoystickKeyMapper(QtWidgets.QWidget):
         """Initialize the widgets."""
         self.removeWidgets()
 
+        self.deadband_input.setValue(joystick.deadband)
+
         for i in range(joystick.get_numaxes()):
             widg = AxisWidget("Axis "+str(i))
             self.axis_layout.addWidget(widg)
@@ -243,6 +257,13 @@ class JoystickKeyMapper(QtWidgets.QWidget):
             pass
 
     joystick = property(get_joystick, set_joystick)
+
+    def set_deadband(self, value):
+        try:
+            self.joystick.set_deadband(value)
+            print(self.joystick.deadband)
+        except:
+            pass
 
     def set_axes_values(self, key):
         try:
