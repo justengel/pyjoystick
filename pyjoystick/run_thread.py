@@ -25,7 +25,7 @@ class ThreadEventManager(object):
         self.alive = alive
         self.proc = None
         self.worker = None
-        self.event_lock = threading.RLock()
+        self.event_lock = threading.Lock()
         self.event_buttons = Stash()
         self.event_latest = {}
 
@@ -312,7 +312,7 @@ class ThreadEventManager(object):
             setattr(self, k, v)
 
         if getattr(self, 'event_lock', None) is None:
-            self.event_lock = threading.RLock()
+            self.event_lock = threading.Lock()
 
 
 if __name__ == '__main__':
