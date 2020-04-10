@@ -96,7 +96,7 @@ class Joystick(BaseJoystick):
 
         return joy
 
-    def is_active(self):
+    def is_available(self):
         """Return if this joystick is still active and available."""
         try:
             return sdl2.SDL_JoystickGetAttached(self.joystick)

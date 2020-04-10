@@ -166,7 +166,7 @@ class Joystick(object):
         self.ball = Stash(Key(Key.BALL, i, None, self) for i in range(self.get_numballs()))
         self.keys = Stash(self.axis + self.button + self.hat + self.ball)
 
-    def is_active(self):
+    def is_available(self):
         """Return if this joystick is still active and available."""
         raise NotImplementedError
 
