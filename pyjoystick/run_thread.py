@@ -25,9 +25,9 @@ class ThreadEventManager(object):
         self.alive = alive
         self.proc = None
         self.worker = None
-        self.event_lock = threading.Lock()
-        self.event_buttons = Stash()
-        self.event_latest = {}
+
+        self.event_lock = threading.RLock()
+        self.joystick_events = {}
 
         if add_joystick is not None:
             self.add_joystick = add_joystick
@@ -64,11 +64,34 @@ class ThreadEventManager(object):
 
     button_repeater = property(get_button_repeater, set_button_repeater)
 
+    def clear_joystick_events(self, joy=None):
+        """Clear and Return the current joystick events.
+
+        Args:
+            joy (Joystick) [None]: Joystick to clear events for. If None clear and return all joysticks.
+
+        Returns:
+            events (dict): Event dictionary of {joystick: {'events': {}, 'buttons': []}}
+        """
+        with self.event_lock:
+            if joy is None:
+                events = self.joystick_events.copy()
+                for joy in self.joystick_events:
+                    self.joystick_events[joy] = {'events': {}, 'buttons': Stash()}
+            else:
+                events = {joy: self.joystick_events.get(joy, {'events': {}, 'buttons': Stash()})}
+                self.joystick_events[joy] = {'events': {}, 'buttons': Stash()}
+
+        return events
+
     def save_joystick(self, joy):
         """Save the added joystick."""
         if self.JOYSTICK_PROXY:
             joy = self.JOYSTICK_PROXY(joy)
         self.joysticks.append(joy)
+
+        # Event handlers
+        self.clear_joystick_events(joy)
 
         # Run the callback handler
         self.add_joystick(joy)
@@ -82,6 +105,10 @@ class ThreadEventManager(object):
 
         # Run the callback handler
         self.remove_joystick(joy)
+        try:
+            self.clear_joystick_events(joy)
+        except:
+            pass
 
     def save_key_event(self, key):
         """Save the initial key event."""
@@ -114,32 +141,27 @@ class ThreadEventManager(object):
     def _update_key_event(self, key):
         """Update the event list from the key event."""
         value = key.value
+        joystick = key.joystick
         with self.event_lock:
             try:
-                key.joystick.update_key(key)
+                joystick.update_key(key)
             except:
                 pass
 
             if key.keytype == key.BUTTON:
-                self.event_buttons.append(key)
+                self.joystick_events[joystick]['buttons'].append(key)
             else:
-                self.event_latest[key] = value
-
-    def clear_key_events(self):
-        """Clear all of the key events."""
-        with self.event_lock:
-            buttons, self.event_buttons = self.event_buttons, Stash()
-            latest, self.event_latest = self.event_latest, {}
-        return buttons, latest
+                self.joystick_events[joystick]['events'][key] = value
 
     def process_events(self):
         """Process all of the saved events."""
-        buttons, latest = self.clear_key_events()
-        for key in buttons:
-            self.handle_key_event(key)
-        for key, value in latest.items():
-            key.value = value
-            self.handle_key_event(key)
+        events = self.clear_joystick_events()
+        for joystick, items in events.items():
+            for key, value in items['events'].items():
+                key.value = value
+                self.handle_key_event(key)
+            for key in items['buttons']:
+                self.handle_key_event(key)
 
     @contextlib.contextmanager
     def run_during(self):
@@ -281,7 +303,7 @@ class ThreadEventManager(object):
             pass
         self.worker = None
         try:
-            self.clear_key_events()
+            self.clear_joystick_events()
         except:
             pass
         return self
@@ -312,7 +334,7 @@ class ThreadEventManager(object):
             setattr(self, k, v)
 
         if getattr(self, 'event_lock', None) is None:
-            self.event_lock = threading.Lock()
+            self.event_lock = threading.RLock()
 
 
 if __name__ == '__main__':
