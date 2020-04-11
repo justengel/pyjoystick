@@ -26,10 +26,7 @@ class Stash(list):
 
     def __setitem__(self, key, value):
         if isinstance(key, int):
-            try:
-                return super(Stash, self).__setitem__(key, value)
-            except (IndexError, Exception):
-                pass
+            return super(Stash, self).__setitem__(key, value)
 
         for i, list_item in enumerate(self):
             if self.compare(list_item, key):

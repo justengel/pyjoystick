@@ -1,5 +1,5 @@
 def test_stash():
-    from pyjoystick.utils import Stash
+    from pyjoystick.stash import Stash
 
     class CustomObject(object):
         def __init__(self, identifier, index, value):
