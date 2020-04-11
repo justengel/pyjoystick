@@ -27,13 +27,34 @@ class HatValues:
     HAT_RIGHT = 2
     HAT_DOWN = 4
     HAT_LEFT = 8
-    HAT_RIGHTUP = 3
-    HAT_RIGHTDOWN = 6
-    HAT_LEFTUP = 9
-    HAT_LEFTDOWN = 12
+    HAT_RIGHTUP = HAT_UPRIGHT = 3
+    HAT_RIGHTDOWN = HAT_DOWNRIGHT = 6
+    HAT_LEFTUP = HAT_UPLEFT = 9
+    HAT_LEFTDOWN = HAT_DOWNLEFT = 12
 
     ALL_HAT_VALUES = (HAT_CENTERED | HAT_UP | HAT_RIGHT | HAT_DOWN | HAT_LEFT |
-                      HAT_RIGHTUP | HAT_RIGHTDOWN | HAT_LEFTUP | HAT_LEFTDOWN)
+                      HAT_UPRIGHT | HAT_DOWNRIGHT | HAT_UPLEFT | HAT_DOWNLEFT)
+
+    HAT_CONVERTER = {
+        HAT_CENTERED: 'Centered', HAT_UP: 'Up', HAT_RIGHT: 'Right', HAT_DOWN: 'Down', HAT_LEFT: 'Left',
+        HAT_UPRIGHT: 'Up Right', HAT_DOWNRIGHT: 'Down Right', HAT_UPLEFT: 'Up Left', HAT_DOWNLEFT: 'Down Left',
+        }
+
+    NAME_CONVERTER = {name: value for value, name in HAT_CONVERTER.items()}
+
+    @classmethod
+    def convert_to_hat_name(cls, hat_value):
+        """Return the given hat_value as a string name"""
+        return cls.HAT_CONVERTER.get(hat_value, str(hat_value))
+
+    @classmethod
+    def convert_to_hat_value(cls, hat_name):
+        """Return the given hat_name as an integer value. If -1 is returned it is an invalid value."""
+        try:
+            value = int(hat_name)
+        except (TypeError, ValueError, Exception):
+            value = -1
+        return cls.NAME_CONVERTER.get(hat_name, value)
 
 
 class Key(object):
@@ -53,29 +74,54 @@ class Key(object):
     HAT_RIGHT = HatValues.HAT_RIGHT
     HAT_DOWN = HatValues.HAT_DOWN
     HAT_LEFT = HatValues.HAT_LEFT
-    HAT_RIGHTUP = HatValues.HAT_RIGHTUP
-    HAT_RIGHTDOWN = HatValues.HAT_RIGHTDOWN
-    HAT_LEFTUP = HatValues.HAT_LEFTUP
-    HAT_LEFTDOWN = HatValues.HAT_LEFTDOWN
+    HAT_RIGHTUP = HAT_UPRIGHT = HatValues.HAT_UPRIGHT
+    HAT_RIGHTDOWN = HAT_DOWNRIGHT = HatValues.HAT_DOWNRIGHT
+    HAT_LEFTUP = HAT_UPLEFT = HatValues.HAT_UPLEFT
+    HAT_LEFTDOWN = HAT_DOWNLEFT = HatValues.HAT_DOWNLEFT
     ALL_HAT_VALUES = HatValues.ALL_HAT_VALUES
+    convert_to_hat_name = staticmethod(HatValues.convert_to_hat_name)
+    convert_to_hat_value = staticmethod(HatValues.convert_to_hat_value)
 
     def __init__(self, keytype, number, value=None, joystick=None, is_repeat=False, override=False):
         self.keytype = keytype
         self.number = number
-        self.value = value
+        self.raw_value = None
         self.joystick = joystick
         self.is_repeat = is_repeat
         self.override = override
 
-    def get_value(self):
-        if self.value is None:
+        self.set_value(value)
+
+    def get_hat_name(self):
+        """Return the value as a HAT name."""
+        if self.keytype != self.HAT:
+            raise TypeError('The Key must be a HAT keytype in order to get the hat name.')
+        return self.convert_to_hat_name(self.raw_value)
+
+    def get_proper_value(self):
+        """Return the value between -1 and 1. Hat values act like buttons and will be 1 or 0.
+        Use get_hat_name to check the keytype.
+        """
+        if self.raw_value is None:
             return 0
-        return self.value
+        elif self.raw_value > 1:
+            return 1
+        return self.raw_value
+
+    def get_value(self):
+        """Return the value of the key"""
+        if self.raw_value is None:
+            return 0
+        return self.raw_value
 
     def set_value(self, value):
-        self.value = value
+        """Set the value of the key"""
+        self.raw_value = value
+
+    value = property(get_value, set_value)
 
     def update_value(self, joystick=None):
+        """Set this key's value from the set or given joystick's associated key value."""
         if joystick is None:
             joystick = self.joystick
         try:
@@ -85,19 +131,72 @@ class Key(object):
             pass
 
     def copy(self):
+        """Create a copy of the key."""
         return self.__class__(self.keytype, self.number, self.value, self.joystick,
                               is_repeat=False, override=self.override)
 
+    @classmethod
+    def to_keyname(cls, key):
+        """Return this key as a string keyname.
+
+          * Format is "{minus}{keytype} {number}".
+          * Hat format is "{keytype} {number} {hat_name}"
+
+        Examples
+            * "Axis 0" - For Axis 0 with a positive or 0 value.
+            * "-Axis 1" - For an Axis Key that has a negative value and needs to be inverted.
+            * "Button 0" - Buttons wont have negative values
+            * "Hat 0 [Left Up]" - Hat values also give the key value as a hat name.
+        """
+        prefix = ''
+        if key.value and key.value < 0:
+            prefix = '-'
+
+        if key.keytype == cls.HAT:
+            return '{}{} {} [{}]'.format(prefix, key.keytype, key.number, key.get_hat_name())
+        else:
+            return '{}{} {}'.format(prefix, key.keytype, key.number)
+
+    @classmethod
+    def from_keyname(cls, keyname, joystick=None):
+        """Return a new key from the given keyname."""
+        # Remove any joystick name attached
+        keyname = str(keyname)
+        if ':' in keyname:
+            keyname = keyname.split(':', 1)[-1].strip()
+
+        # Split the keyname
+        keytype, number = keyname.split(' ', 1)
+
+        # Check if the keyname starts with a negative.
+        value = None
+        if keytype.startswith('-'):
+            value = -1
+            keytype = keytype[1:].strip()
+
+        # Check if the number has '['
+        if '[' in number:
+            number, hat_name = number.split('[', 1)
+            number = number.strip()
+            value = int(cls.convert_to_hat_value(hat_name.replace(']', '').strip()))
+        number = int(number)
+
+        return Key(keytype, number, value, joystick=joystick)
+
     @property
     def keyname(self):
-        """Return the keytype and number of the key as a string."""
-        return '{} {}'.format(self.keytype, self.number)
+        return self.to_keyname(self)
+
+    @keyname.setter
+    def keyname(self, keyname):
+        new_key = self.from_keyname(keyname)
+        self.keytype = new_key.keytype
+        self.number = new_key.number
+        if self.value:
+            self.value = new_key.value
 
     def __str__(self):
-        if self.joystick:
-            return '{}: {}'.format(self.joystick, self.keyname)
-        else:
-            return self.keyname
+        return self.to_keyname(self)
 
     def __repr__(self):
         if self.joystick:
@@ -110,7 +209,7 @@ class Key(object):
                     joystick=self.joystick, keyname=self.keyname)
 
     def __hash__(self):
-        return hash(str(self))
+        return hash('{} {}'.format(self.keytype, self.number))
 
     def __eq__(self, other):
         try:

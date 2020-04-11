@@ -36,7 +36,7 @@ A green ball will move around as you press the HAT button on the controller.
     import pyjoystick
     from pyjoystick.sdl2 import Key, Joystick, run_event_loop
     # from pyjoystick.pygame import Key, Joystick, run_event_loop
-    from pyjoystick.qt import ThreadUpdater
+    from qt_thread_updater import ThreadUpdater
 
     from qtpy import QtWidgets, QtGui, QtCore
 
@@ -80,7 +80,7 @@ A green ball will move around as you press the HAT button on the controller.
     mover.paintEvent = svg_paint_event.__get__(mover, mover.__class__)
 
     def handle_key_event(key):
-        updater.now_call_latest(lbl.setText, '{} = {}'.format(key, key.value))
+        updater.now_call_latest(lbl.setText, '{}: {} = {}'.format(key.joystick, key, key.value))
 
         # print(key, '-', key.keytype, '-', key.number, '-', key.value)
 
@@ -93,18 +93,18 @@ A green ball will move around as you press the HAT button on the controller.
             mover.point.setY(mover.point.y() + 10)
         if key.value == Key.HAT_LEFT:
             mover.point.setX(mover.point.x() - 10)
-        elif key.value == Key.HAT_LEFTUP:
+        elif key.value == Key.HAT_UPLEFT:
             mover.point.setX(mover.point.x() - 5)
             mover.point.setY(mover.point.y() - 5)
-        elif key.value == Key.HAT_LEFTDOWN:
+        elif key.value == Key.HAT_DOWNLEFT:
             mover.point.setX(mover.point.x() - 5)
             mover.point.setY(mover.point.y() + 5)
         elif key.value == Key.HAT_RIGHT:
             mover.point.setX(mover.point.x() + 10)
-        elif key.value == Key.HAT_RIGHTUP:
+        elif key.value == Key.HAT_UPRIGHT:
             mover.point.setX(mover.point.x() + 5)
             mover.point.setY(mover.point.y() - 5)
-        elif key.value == Key.HAT_RIGHTDOWN:
+        elif key.value == Key.HAT_DOWNRIGHT:
             mover.point.setX(mover.point.x() + 5)
             mover.point.setY(mover.point.y() + 5)
         updater.now_call_latest(mover.move, mover.point)
