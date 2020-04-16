@@ -5,6 +5,7 @@ __all__ = ['KeyTypes', 'HatValues', 'Key', 'Joystick']
 
 
 class KeyTypes:
+    """Types of keys the controller could report (Axis, Button, Hat, Ball)."""
     AXIS = "Axis"
     BUTTON = "Button"
     HAT = "Hat"
@@ -22,6 +23,7 @@ class KeyTypes:
 
 
 class HatValues:
+    """Have values and converters. Values are numbered like bit flags."""
     HAT_CENTERED = 0
     HAT_UP = 1
     HAT_RIGHT = 2
@@ -35,9 +37,20 @@ class HatValues:
     ALL_HAT_VALUES = (HAT_CENTERED | HAT_UP | HAT_RIGHT | HAT_DOWN | HAT_LEFT |
                       HAT_UPRIGHT | HAT_DOWNRIGHT | HAT_UPLEFT | HAT_DOWNLEFT)
 
+    HAT_NAME_CENTERED = 'Centered'
+    HAT_NAME_UP = 'Up'
+    HAT_NAME_RIGHT = 'Right'
+    HAT_NAME_DOWN = 'Down'
+    HAT_NAME_LEFT = 'Left'
+    HAT_NAME_UPRIGHT = HAT_NAME_RIGHTUP = 'Up Right'
+    HAT_NAME_DOWNRIGHT = HAT_NAME_RIGHTDOWN = 'Down Right'
+    HAT_NAME_UPLEFT = HAT_NAME_LEFTUP = 'Up Left'
+    HAT_NAME_DOWNLEFT = HAT_NAME_LEFTDOWN = 'Down Left'
+
     HAT_CONVERTER = {
-        HAT_CENTERED: 'Centered', HAT_UP: 'Up', HAT_RIGHT: 'Right', HAT_DOWN: 'Down', HAT_LEFT: 'Left',
-        HAT_UPRIGHT: 'Up Right', HAT_DOWNRIGHT: 'Down Right', HAT_UPLEFT: 'Up Left', HAT_DOWNLEFT: 'Down Left',
+        HAT_CENTERED: HAT_NAME_CENTERED, HAT_UP: HAT_NAME_UP, HAT_RIGHT: HAT_NAME_RIGHT, HAT_DOWN: HAT_NAME_DOWN,
+        HAT_LEFT: HAT_NAME_LEFT, HAT_UPRIGHT: HAT_NAME_UPRIGHT, HAT_DOWNRIGHT: HAT_NAME_DOWNRIGHT,
+        HAT_UPLEFT: HAT_NAME_UPLEFT, HAT_DOWNLEFT: HAT_NAME_DOWNLEFT,
         }
 
     NAME_CONVERTER = {name: value for value, name in HAT_CONVERTER.items()}
@@ -58,6 +71,7 @@ class HatValues:
 
 
 class Key(object):
+    """Key that the controller received. This stores the key type, value, and other properties to use."""
     # Key Types
     KeyTypes = KeyTypes
     AXIS = KeyTypes.AXIS
@@ -79,6 +93,17 @@ class Key(object):
     HAT_LEFTUP = HAT_UPLEFT = HatValues.HAT_UPLEFT
     HAT_LEFTDOWN = HAT_DOWNLEFT = HatValues.HAT_DOWNLEFT
     ALL_HAT_VALUES = HatValues.ALL_HAT_VALUES
+
+    HAT_NAME_CENTERED = HatValues.HAT_NAME_CENTERED
+    HAT_NAME_UP = HatValues.HAT_NAME_UP
+    HAT_NAME_RIGHT = HatValues.HAT_NAME_RIGHT
+    HAT_NAME_DOWN = HatValues.HAT_NAME_DOWN
+    HAT_NAME_LEFT = HatValues.HAT_NAME_LEFT
+    HAT_NAME_UPRIGHT = HAT_NAME_RIGHTUP = HatValues.HAT_NAME_UPRIGHT
+    HAT_NAME_DOWNRIGHT = HAT_NAME_RIGHTDOWN = HatValues.HAT_NAME_DOWNRIGHT
+    HAT_NAME_UPLEFT = HAT_NAME_LEFTUP = HatValues.HAT_NAME_UPLEFT
+    HAT_NAME_DOWNLEFT = HAT_NAME_LEFTDOWN = HatValues.HAT_NAME_DOWNLEFT
+
     convert_to_hat_name = staticmethod(HatValues.convert_to_hat_name)
     convert_to_hat_value = staticmethod(HatValues.convert_to_hat_value)
 
