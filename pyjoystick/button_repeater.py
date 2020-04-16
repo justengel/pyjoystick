@@ -46,7 +46,7 @@ class Repeater(object):
         self._check_timeout = value
         try:
             self.thread.interval = self.get_check_timeout()
-        except:
+        except (AttributeError, Exception):
             pass
 
     check_timeout = property(get_check_timeout, set_check_timeout)
@@ -62,7 +62,7 @@ class Repeater(object):
         self._name = value
         try:
             self.thread.name = value
-        except:
+        except (AttributeError, Exception):
             pass
 
     @staticmethod
@@ -84,7 +84,7 @@ class Repeater(object):
         """Stop the thread to check for button repeats"""
         try:
             self.thread.join(0)
-        except:
+        except (AttributeError, Exception):
             pass
         self.thread = None
 
@@ -92,7 +92,7 @@ class Repeater(object):
             self.key_times = {}
 
     def set(self, key):
-        """Set the key to start or stop repeate based on the value."""
+        """Set the key to start or stop repeat based on the value."""
         if key.value:
             self.start_repeat(key)
         else:
@@ -104,13 +104,18 @@ class Repeater(object):
             k = self.get_key_hash(key)
             if k not in self.key_times:
                 self.key_times[k] = [time.time() + self.first_repeat_timeout, key]
+            else:
+                # Check if the key value changed and reset if it did
+                old_key = self.key_times[k][1]
+                if old_key.value != key.value:
+                    self.key_times[k] = [time.time() + self.first_repeat_timeout, key]
 
     def stop_repeat(self, key):
         """Stop a key from repeating."""
         with self._lock:
             try:
                 del self.key_times[self.get_key_hash(key)]
-            except:
+            except (AttributeError, Exception):
                 pass
 
     def _run(self):
@@ -123,7 +128,7 @@ class Repeater(object):
                     self.key_repeated(new_key)
                     try:
                         self.key_times[k][0] = time.time() + self.repeat_timeout
-                    except:
+                    except (KeyError, IndexError, Exception):
                         pass
 
 
@@ -136,7 +141,7 @@ class ButtonRepeater(Repeater):
 
 class HatRepeater(Repeater):
     def set(self, key):
-        """Set the key to start or stop repeate based on the value."""
+        """Set the key to start or stop repeat based on the value."""
         value = key.value
 
         if key.keytype == key.HAT:
@@ -154,7 +159,7 @@ class HatRepeater(Repeater):
                         # Hat value changed. Try repeating a different value.
                         self.stop_repeat(key)
                         value = True
-            except:
+            except (KeyError, IndexError, AttributeError, Exception):
                 pass
 
         if value:
