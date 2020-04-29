@@ -6,4 +6,5 @@ from .keys_trigger import RESOURCE_DIR, KEYBOARD_ACTIVE_IMG, KEYBOARD_INACTIVE_I
 
 from .mouse_trigger import MousePanTilt
 
-from .keymapper import JOYSTICK_ACTIVE_IMG, JOYSTICK_INACTIVE_IMG, JoystickKeyMapper
+from .keymapper import JOYSTICK_ACTIVE_IMG, JOYSTICK_INACTIVE_IMG, \
+    JoystickKeyMapperMixin, JoystickKeyMapper, JoystickKeyMapperDialog

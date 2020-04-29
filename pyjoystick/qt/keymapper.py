@@ -12,7 +12,8 @@ from pyjoystick.qt.widgets import AxisWidget, ButtonWidget, HatWidget, SpinSlide
 from pyjoystick.qt.keys_trigger import RESOURCE_DIR
 
 
-__all__ = ["JOYSTICK_ACTIVE_IMG", "JOYSTICK_INACTIVE_IMG", "JoystickKeyMapper"]
+__all__ = ["JOYSTICK_ACTIVE_IMG", "JOYSTICK_INACTIVE_IMG",
+           'JoystickKeyMapperMixin', 'JoystickKeyMapper', 'JoystickKeyMapperDialog']
 
 
 # ========== ICONS ==========
@@ -21,19 +22,53 @@ JOYSTICK_INACTIVE_IMG = os.path.join(RESOURCE_DIR, "gamepad_inactive.png")
 # ========== END ICONS ==========
 
 
-class JoystickKeyMapper(QtWidgets.QWidget):
+class JoystickKeyMapperMixin(object):
     """Help the user map the keys."""
 
     Joystick = Joystick
 
-    def __init__(self, joystick=None, parent=None, event_mngr=None):
-        super().__init__(parent)
+    def __init__(self, joystick=None, event_mngr=None, **kwargs):
+        super().__init__()
 
         self._event_mngr = None
         self._joystick = None
         self._joysticks = []
         self.btns_per_row = 5
+        self._lock = None
 
+        # Qt variables
+        self.main_layout = None
+        self.name_lay = None
+        self.name_lbl = None
+        self.deadband_layout = None
+        self.deadband_input = None
+        self.axis_layout = None
+        self.button_layout = None
+        self.hat_layout = None
+        self.ball_layout = None
+        self.sel_btn = None
+        self._dialog = None
+
+        self.init(joystick=joystick, event_mngr=event_mngr)
+
+    def init(self, joystick=None, event_mngr=None):
+        self._event_mngr = None
+        self._joystick = None
+        self._joysticks = []
+        self.btns_per_row = 5
+
+        self.init_layout()
+
+        # Items
+        self._lock = threading.Lock()
+        if joystick is not None:
+            self.sel_btn.hide()
+            self.set_joystick(joystick)
+
+        if event_mngr is not None:
+            self.set_event_mngr(event_mngr)
+
+    def init_layout(self):
         # Layout
         self.main_layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -87,16 +122,6 @@ class JoystickKeyMapper(QtWidgets.QWidget):
         self.sel_btn.clicked.connect(self.select_joystick)
         self.name_lay.addWidget(self.sel_btn, alignment=QtCore.Qt.AlignLeft)
         self._dialog = None
-
-        # Items
-        self._lock = threading.Lock()
-        if joystick is not None:
-            self.sel_btn.hide()
-            self.set_joystick(joystick)
-
-        if event_mngr is not None:
-            self.set_event_mngr(event_mngr)
-    # end Constructor
 
     def get_event_mngr(self):
         """Return the event manager."""
@@ -306,6 +331,20 @@ class JoystickKeyMapper(QtWidgets.QWidget):
         return QtWidgets.QWidget.closeEvent(self, *args, **kwargs)
 
 
+class JoystickKeyMapper(QtWidgets.QWidget, JoystickKeyMapperMixin):
+    """Help the user map the keys."""
+    def __init__(self, joystick=None, event_mngr=None, parent=None):
+        QtWidgets.QWidget.__init__(self, parent=parent)
+        self.init(joystick=joystick, event_mngr=event_mngr)
+
+
+class JoystickKeyMapperDialog(QtWidgets.QDialog, JoystickKeyMapperMixin):
+    """Help the user map the keys."""
+    def __init__(self, joystick=None, event_mngr=None, parent=None):
+        QtWidgets.QDialog.__init__(self, parent=parent)
+        self.init(joystick=joystick, event_mngr=event_mngr)
+
+
 if __name__ == "__main__":
     import sys
     from pyjoystick import ThreadEventManager, ButtonHatRepeater
@@ -315,7 +354,7 @@ if __name__ == "__main__":
 
     app = QtWidgets.QApplication([])
 
-    w = JoystickKeyMapper(event_mngr=ThreadEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
+    w = JoystickKeyMapperDialog(event_mngr=ThreadEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
     # w = JoystickKeyMapper(event_mngr=MultiprocessingEventManager(run_event_loop, button_repeater=ButtonHatRepeater()))  # , activity_timeout=0.02))
     w.show()
 
