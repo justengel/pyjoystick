@@ -356,13 +356,14 @@ class Joystick(object):
         self.deadband = value
 
     def __eq__(self, other):
-        name, ident, joystick = self.get_name(), self.get_id(), self.joystick
+        name, my_id, joystick = self.get_name(), self.get_id(), self.joystick
         try:
             return name == other.get_name() or ident == other or (joystick == other.joystick and joystick is not None)
         except:
             pass
         try:
-            return name == other or ident == other or (joystick == other and joystick is not None)
+            is_id = not isinstance(other, bool) and my_id == other
+            return is_id or name == other or (joystick == other and joystick is not None)
         except:
             pass
         return False
