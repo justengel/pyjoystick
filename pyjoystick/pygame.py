@@ -10,7 +10,7 @@ with change_path(PYJOYSTICK_DIR):
     import pygame
 
 from pyjoystick.stash import Stash
-from pyjoystick.interface import Key, Joystick as BaseJoystick
+from pyjoystick.interface import HatValues, Key, Joystick as BaseJoystick
 
 
 __all__ = ['Key', 'Joystick', 'run_event_loop', 'stop_event_wait',
@@ -88,19 +88,6 @@ class Joystick(BaseJoystick):
             pass
 
 
-HAT_CONVERTER = {
-        (0, 0): Key.HAT_CENTERED,
-        (0, 1): Key.HAT_UP,
-        (1, 0): Key.HAT_RIGHT,
-        (0, -1): Key.HAT_DOWN,
-        (-1, 0): Key.HAT_LEFT,
-        (1, 1): Key.HAT_RIGHTUP,
-        (1, -1): Key.HAT_RIGHTDOWN,
-        (-1, 1): Key.HAT_LEFTUP,
-        (-1, -1): Key.HAT_LEFTDOWN,
-        }
-
-
 def get_init(module=pygame):
     """Return if the given module is initialize."""
     if module != pygame:
@@ -171,7 +158,7 @@ def key_from_event(event, joystick=None):
     elif event.type == pygame.JOYAXISMOTION:
         return Key(Key.AXIS, event.axis, event.value, joystick)
     elif event.type == pygame.JOYHATMOTION:
-        value = HAT_CONVERTER.get(tuple(event.value), Key.HAT_CENTERED)
+        value = HatValues.from_range(tuple(event.value), Key.HAT_CENTERED)
         return Key(Key.HAT, event.hat, value, joystick)
     elif event.type == pygame.JOYBALLMOTION:
         return Key(Key.BALL, event.ball, event.value, joystick)

@@ -55,6 +55,42 @@ class HatValues:
 
     NAME_CONVERTER = {name: value for value, name in HAT_CONVERTER.items()}
 
+    HAT_TO_RANGE = {
+        HAT_CENTERED: (0, 0), HAT_NAME_CENTERED: (0, 0),
+        HAT_UP: (0, 1), HAT_NAME_UP: (0, 1),
+        HAT_RIGHT: (1, 0), HAT_NAME_RIGHT: (1, 0),
+        HAT_DOWN: (0, -1), HAT_NAME_DOWN: (0, -1),
+        HAT_LEFT: (-1, 0), HAT_NAME_LEFT: (-1, 0),
+        HAT_RIGHTUP: (1, 1), HAT_NAME_RIGHTUP: (1, 1),
+        HAT_RIGHTDOWN: (1, -1), HAT_NAME_RIGHTDOWN: (1, -1),
+        HAT_LEFTUP: (-1, 1), HAT_NAME_LEFTUP: (-1, 1),
+        HAT_LEFTDOWN: (-1, -1), HAT_NAME_LEFTDOWN: (-1, -1),
+        }
+
+    HAT_FROM_RANGE = {
+        (0, 0): HAT_CENTERED,
+        (0, 1): HAT_UP,
+        (1, 0): HAT_RIGHT,
+        (0, -1): HAT_DOWN,
+        (-1, 0): HAT_LEFT,
+        (1, 1): HAT_RIGHTUP,
+        (1, -1): HAT_RIGHTDOWN,
+        (-1, 1): HAT_LEFTUP,
+        (-1, -1): HAT_LEFTDOWN,
+        }
+
+    HAT_NAME_FROM_RANGE = {
+        (0, 0): HAT_NAME_CENTERED,
+        (0, 1): HAT_NAME_UP,
+        (1, 0): HAT_NAME_RIGHT,
+        (0, -1): HAT_NAME_DOWN,
+        (-1, 0): HAT_NAME_LEFT,
+        (1, 1): HAT_NAME_RIGHTUP,
+        (1, -1): HAT_NAME_RIGHTDOWN,
+        (-1, 1): HAT_NAME_LEFTUP,
+        (-1, -1): HAT_NAME_LEFTDOWN,
+        }
+
     @classmethod
     def convert_to_hat_name(cls, hat_value):
         """Return the given hat_value as a string name"""
@@ -68,6 +104,24 @@ class HatValues:
         except (TypeError, ValueError, Exception):
             value = -1
         return cls.NAME_CONVERTER.get(hat_name, value)
+
+    @classmethod
+    def as_range(cls, hat, default=None):
+        if default is None:
+            default = hat
+        return cls.HAT_TO_RANGE.get(hat, default)
+
+    @classmethod
+    def from_range(cls, hat, default=None):
+        if default is None:
+            default = hat
+        return cls.HAT_FROM_RANGE.get(hat, default)
+
+    @classmethod
+    def name_from_range(cls, hat, default=None):
+        if default is None:
+            default = hat
+        return cls.HAT_NAME_FROM_RANGE.get(hat, default)
 
 
 class Key(object):
@@ -106,6 +160,7 @@ class Key(object):
 
     convert_to_hat_name = staticmethod(HatValues.convert_to_hat_name)
     convert_to_hat_value = staticmethod(HatValues.convert_to_hat_value)
+    convert_to_hat_range = staticmethod(HatValues.as_range)
 
     def __init__(self, keytype, number, value=None, joystick=None, is_repeat=False, override=False):
         self.keytype = keytype
@@ -122,6 +177,12 @@ class Key(object):
         if self.keytype != self.HAT:
             raise TypeError('The Key must be a HAT keytype in order to get the hat name.')
         return self.convert_to_hat_name(self.raw_value)
+
+    def get_hat_range(self):
+        """Return the key as a range (right[1]/left[-1], up[1]/down[-1])."""
+        if self.keytype != self.HAT:
+            raise TypeError('The Key must be a HAT keytype in order to get the hat name.')
+        return self.convert_to_hat_range(self.raw_value)
 
     def get_proper_value(self):
         """Return the value between -1 and 1. Hat values act like buttons and will be 1 or 0.
