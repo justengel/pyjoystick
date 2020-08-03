@@ -358,7 +358,7 @@ class Joystick(object):
     def __eq__(self, other):
         name, my_id, joystick = self.get_name(), self.get_id(), self.joystick
         try:
-            return name == other.get_name() or ident == other or (joystick == other.joystick and joystick is not None)
+            return name == other.get_name() or my_id == other or (joystick == other.joystick and joystick is not None)
         except:
             pass
         try:
