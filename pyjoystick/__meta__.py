@@ -1,5 +1,5 @@
 name = 'pyjoystick'
-version = '1.1.3'
+version = '1.1.4'
 description = 'Tools to get Joystick events.'
 url = 'https://github.com/justengel/pyjoystick'
 author = 'Justin Engel'
