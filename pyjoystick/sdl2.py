@@ -24,7 +24,8 @@ from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 __all__ = ['Key', 'Joystick', 'run_event_loop', 'stop_event_wait',
            'sdl2', 'get_init', 'init', 'quit', 'key_from_event',
-           'get_guid', 'get_mapping', 'get_mapping_name', 'is_trigger']
+           'get_guid', 'get_str_mapping', 'get_mapping', 'get_mapping_name', 'make_str_mapping', 'set_mapping',
+           'is_trigger']
 
 
 class Joystick(BaseJoystick):
@@ -166,8 +167,10 @@ def get_guid(joystick):
     return guid_buff.value
 
 
-def get_mapping(joystick):
-    """Return the button mapping.
+def get_str_mapping(joystick):
+    """Return the mapping string for the joystick.
+
+    https://wiki.libsdl.org/SDL_GameControllerAddMapping?highlight=%28%5CbCategoryGameController%5Cb%29%7C%28CategoryEnum%29
 
     Note:
         Hat keys have a value that is returned to make it easy to map a hat value to a function.
@@ -176,10 +179,8 @@ def get_mapping(joystick):
         joystick (Joystick/str): Joystick object or String GUID
 
     Returns:
-        d (dict): Dictionary of {name: Key} mappings
+        map_str (string): The mapping string that is returned from sdl2
     """
-    # Mapping dictionary
-    mapping = {}
     map_str = None
 
     # ===== FROM GameController =====
@@ -204,13 +205,30 @@ def get_mapping(joystick):
             except:
                 pass
 
-    # Check the type
-    if map_str is None:
-        return mapping
-    try:
-        map_str = map_str.decode('utf-8')
-    except:
-        pass
+    if map_str is not None:
+        try:
+            map_str = map_str.decode('utf-8')
+        except:
+            pass
+        return map_str
+    return ''
+
+
+def get_mapping(joystick):
+    """Return the button mapping.
+
+    Note:
+        Hat keys have a value that is returned to make it easy to map a hat value to a function.
+
+    Args:
+        joystick (Joystick/str): Joystick object or String GUID
+
+    Returns:
+        d (dict): Dictionary of {name: Key} mappings
+    """
+    # Mapping dictionary
+    mapping = {}
+    map_str = get_str_mapping(joystick)
 
     for item in map_str.split(','):
         if ":" in item:
@@ -237,6 +255,80 @@ def get_mapping_name(joystick, key):
     return None
 
 
+def make_str_mapping(joystick, mapping):
+    """Make the button mapping.
+    Note:
+        Hat keys should have a set value for the proper quadrant.
+
+    Args:
+        joystick (Joystick/str): Joystick object or String GUID
+        mapping (dict): Dictionary of name: Key values to map to the joystick/game controller.
+
+    Returns:
+        map_str (str): String mapping to give to sdl2
+    """
+    # Mapping String
+    guid = joystick
+    name = joystick
+    try:
+        guid = joystick.guid.decode('utf-8')
+    except (AttributeError, Exception):
+        try:
+            guid = sdl2.SDL_JoystickGetGUID(joystick.guid)
+        except (AttributeError, Exception):
+            try:
+                guid = sdl2.SDL_JoystickGetGUID(joystick)
+            except (AttributeError, Exception):
+                pass
+    try:
+        name = joystick.name
+    except (AttributeError, Exception):
+        pass
+
+    keys = ','.join(('{}:{}'.format(name, _key_to_mapping(key))
+                     for name, key in mapping.items() if _is_key_mapping(key)))
+    map_str = ','.join((str(guid), str(name), keys))
+    return map_str
+
+
+def set_mapping(joystick, mapping):
+    """Set the button mapping.
+
+    Note:
+        Hat keys should have a set value for the proper quadrant.
+
+    Args:
+        joystick (Joystick/str): Joystick object or String GUID
+        mapping (dict): Dictionary of name: Key values to map to the joystick/game controller.
+
+    Raises:
+        ValueError: If the mapping was invalid.
+
+    Returns:
+        success (int): If 1 the mapping was added. If 0 the prefious mapping was updated
+    """
+    map_str = make_str_mapping(joystick, mapping)
+    res = sdl2.SDL_GameControllerAddMapping(map_str.encode('utf-8'))
+    if res == -1:
+        raise ValueError('Invalid game controller mapping! Tried mapping "{}".'.format(map_str))
+    return res
+
+
+def _is_key_mapping(key):
+    keytype = key.keytype
+    return keytype == Key.BUTTON or keytype == Key.AXIS or keytype == Key.HAT
+
+
+def _key_to_mapping(key):
+    if key.keytype == Key.BUTTON:
+        return 'b{}'.format(key.number)
+    elif key.keytype == Key.AXIS:
+        return 'a{}'.format(key.number)
+    elif key.keytype == Key.HAT:
+        return 'h{}.{}'.format(key.number, key.value)
+    return None
+
+
 def is_trigger(joystick, axis_id):
     """Return if the given joystick axis is a trigger (Don't want triggers scaled from -1 resting to 1).
 
@@ -248,10 +340,12 @@ def is_trigger(joystick, axis_id):
           is_trigger (bool): If True this axis is a trigger.
     """
     try:
+        # Prioritize GameController mapping?
         if not sdl2.SDL_GameControllerGetAttached(joystick.gamecontroller):
-            return 'trigger' in str(get_mapping_name(joystick, Key(Key.AXIS, axis_id))).lower()
+            key_name = str(get_mapping_name(joystick, Key(Key.AXIS, axis_id))).lower()
+            return 'trigger' in key_name
     except:
-        return False
+        pass
 
     # Check the left trigger
     try:
@@ -259,10 +353,7 @@ def is_trigger(joystick, axis_id):
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS and bind.value.axis == axis_id:
             return True
     except:
-        try:
-            return 'trigger' in str(get_mapping_name(joystick, Key(Key.AXIS, axis_id))).lower()
-        except:
-            pass
+        pass
 
     # Check the right trigger
     try:
@@ -270,10 +361,12 @@ def is_trigger(joystick, axis_id):
         if bind.bindType == sdl2.SDL_CONTROLLER_BINDTYPE_AXIS and bind.value.axis == axis_id:
             return True
     except:
-        try:
-            return 'trigger' in str(get_mapping_name(joystick, Key(Key.AXIS, axis_id))).lower()
-        except:
-            pass
+        pass
+
+    try:
+        return 'trigger' in str(get_mapping_name(joystick, Key(Key.AXIS, axis_id))).lower()
+    except:
+        pass
 
     return False
 
