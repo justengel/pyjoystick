@@ -364,6 +364,10 @@ class Joystick(object):
         key_attr = getattr(self, str(key.keytype).lower())  # self.axis, self.button, self.hat, or self.ball
         return key_attr[key.number]
 
+    def get_key_value(self, key):
+        """Return the current value of this joystick's key for the given key."""
+        return self.get_key(key).get_value()
+
     def update_key(self, key):
         """Update the value for a given key."""
         self.get_key(key).set_value(key.value)
