@@ -1,6 +1,7 @@
 import contextlib
 import time
 import threading
+from collections import OrderedDict
 
 from pyjoystick.stash import Stash
 from pyjoystick.utils import PeriodicThread, deadband
@@ -77,10 +78,10 @@ class ThreadEventManager(object):
             if joy is None:
                 events = self.joystick_events.copy()
                 for joy in self.joystick_events:
-                    self.joystick_events[joy] = {'events': {}, 'buttons': Stash()}
+                    self.joystick_events[joy] = {'events': OrderedDict(), 'buttons': Stash()}
             else:
-                events = {joy: self.joystick_events.get(joy, {'events': {}, 'buttons': Stash()})}
-                self.joystick_events[joy] = {'events': {}, 'buttons': Stash()}
+                events = {joy: self.joystick_events.get(joy, {'events': OrderedDict(), 'buttons': Stash()})}
+                self.joystick_events[joy] = {'events': OrderedDict(), 'buttons': Stash()}
 
         return events
 
@@ -148,17 +149,17 @@ class ThreadEventManager(object):
             except:
                 pass
 
-            if key.keytype == key.BUTTON:
-                self.joystick_events[joystick]['buttons'].append(key)
-            else:
+            if key.keytype == key.AXIS:
                 self.joystick_events[joystick]['events'][key] = value
+            else:
+                self.joystick_events[joystick]['buttons'].append(key)
 
     def process_events(self):
         """Process all of the saved events."""
         events = self.clear_joystick_events()
         for joystick, items in events.items():
             for key, value in items['events'].items():
-                key.value = value
+                key.value = value  # Value needs to be updated for the key. The key is only used as hash
                 self.handle_key_event(key)
             for key in items['buttons']:
                 self.handle_key_event(key)
