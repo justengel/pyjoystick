@@ -23,7 +23,7 @@ from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 
 __all__ = ['Key', 'Joystick', 'run_event_loop', 'stop_event_wait',
-           'get_init', 'init', 'quit', 'key_from_event',
+           'sdl2', 'get_init', 'init', 'quit', 'key_from_event',
            'get_guid', 'get_mapping', 'get_mapping_name', 'is_trigger']
 
 
