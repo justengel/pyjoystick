@@ -272,11 +272,12 @@ class ThreadEventManager(object):
         self.proc = threading.Thread(target=self.run,
                                      args=(self.event_loop, self.save_joystick, self.delete_joystick,
                                            self.save_key_event),
-                                     kwargs={'alive': self.is_running, 'button_repeater': self.button_repeater})
+                                     kwargs={'alive': self.is_running, 'button_repeater': self.button_repeater},
+                                     name='pyjoystick-ThreadEventManager')
         self.proc.daemon = True
         self.proc.start()
 
-        self.worker = PeriodicThread(self.activity_timeout, self.process_events)
+        self.worker = PeriodicThread(self.activity_timeout, self.process_events, name='pyjoystick-process_events')
         self.worker.alive = self.alive  # stop when this event stops
         self.worker.daemon = True
         self.worker.start()
@@ -287,6 +288,10 @@ class ThreadEventManager(object):
         try:
             self.alive.clear()
         except:
+            pass
+        try:
+            self.button_repeater.stop()
+        except (AttributeError, Exception):
             pass
         try:
             # Try pumping an event on queue to break out of the wait condition

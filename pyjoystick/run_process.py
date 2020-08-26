@@ -74,6 +74,7 @@ class MultiprocessingEventManager(ThreadEventManager):
 
         if button_repeater is not None:
             button_repeater.start()
+
         event_loop(add_joystick, remove_joystick, handle_key_event, alive=self.is_running)
 
     def start(self):
@@ -84,11 +85,12 @@ class MultiprocessingEventManager(ThreadEventManager):
         self.proc = mp.Process(target=self.run,
                                args=(self.event_loop, self._save_joystick, self._delete_joystick, self._handle_key_event),
                                kwargs={'alive': self.alive, 'button_repeater': self.button_repeater,
-                                       'queue': self.queue})
+                                       'queue': self.queue},
+                               name='pyjoystick-MultiprocessingEventManager')
         self.proc.daemon = True
         self.proc.start()
 
-        self.worker = threading.Thread(target=self.process_queue)
+        self.worker = threading.Thread(target=self.process_queue, name='pyjoystick-process_queue')
         self.worker.daemon = True
         self.worker.start()
         return self
