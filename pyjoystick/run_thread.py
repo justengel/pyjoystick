@@ -149,10 +149,21 @@ class ThreadEventManager(object):
             except:
                 pass
 
-            if key.keytype == key.AXIS:
-                self.joystick_events[joystick]['events'][key] = value
-            else:
-                self.joystick_events[joystick]['buttons'].append(key)
+            try:
+                # Save the key event
+                if key.keytype == key.AXIS:
+                    self.joystick_events[joystick]['events'][key] = value
+                else:
+                    self.joystick_events[joystick]['buttons'].append(key)
+            except KeyError:
+                # Joystick not found. Show as being added.
+                self.save_joystick(joystick)
+
+                # Save the key event
+                if key.keytype == key.AXIS:
+                    self.joystick_events[joystick]['events'][key] = value
+                else:
+                    self.joystick_events[joystick]['buttons'].append(key)
 
     def process_events(self):
         """Process all of the saved events."""
