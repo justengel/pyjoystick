@@ -1,4 +1,4 @@
-from pyjoystick.sdl2 import Key, Joystick, run_event_loop, get_mapping, set_mapping, get_mapping_name, is_trigger
+from pyjoystick.sdl2 import sdl2, Key, Joystick, run_controller_event_loop, get_mapping, set_mapping
 
 
 if __name__ == '__main__':
@@ -20,3 +20,31 @@ if __name__ == '__main__':
     print("New mapping:")
     for k, v in get_mapping(monitor).items():
         print(k, ":", v)
+
+
+#################################
+def print_add(joy):
+    print('Added', joy)
+
+
+def print_remove(joy):
+    print('Removed', joy)
+
+
+def key_received(key):
+    # Make joystick key and event key values match
+    monitor.update_key(key)
+
+    # Get mapping name
+    key_name = key.joystick.key_mapping.get(key, None)
+    if not key_name:
+        return
+
+    if key_name == 'a':
+        # A button pressed do action
+        print('Action on button A')
+    else:
+        print('Key:', key_name, 'Value:', key.value, 'Joystick:', key.joystick)
+
+
+run_controller_event_loop(print_add, print_remove, key_received)
