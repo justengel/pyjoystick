@@ -1,25 +1,23 @@
-import ctypes
-
-# ========== SDL2 Pathing ==========
 import os
 import sys
 import platform
+import ctypes
 
-from pyjoystick.utils import PYJOYSTICK_DIR, change_path, rescale
-
-# ========== SDL2 Pathing ==========
-if 'windows' in platform.architecture()[1].lower():
-    if '64' in platform.architecture()[0]:
-        os.environ.setdefault('PYSDL2_DLL_PATH', os.path.join(PYJOYSTICK_DIR, 'sdl2_win64'))
-    else:
-        os.environ.setdefault('PYSDL2_DLL_PATH', os.path.join(PYJOYSTICK_DIR, 'sdl2_win32'))
-# ========== END SDL2 Pathing ==========
-
-with change_path(PYJOYSTICK_DIR):
-    import sdl2
-
+from pyjoystick.utils import files, as_file, change_path, rescale
 from pyjoystick.stash import Stash
 from pyjoystick.interface import Key, Joystick as BaseJoystick
+
+# ========== SDL2 Pathing ==========
+with as_file(files('pyjoystick')) as PYJOYSTICK_DIR:  # Find SDL2 resource files properly
+    if 'windows' in platform.architecture()[1].lower():
+        if '64' in platform.architecture()[0]:
+            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.join(PYJOYSTICK_DIR, 'sdl2_win64'))
+        else:
+            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.join(PYJOYSTICK_DIR, 'sdl2_win32'))
+
+    import sdl2
+# ========== END SDL2 Pathing ==========
+
 
 
 __all__ = ['Key', 'Joystick', 'run_event_loop', 'stop_event_wait',

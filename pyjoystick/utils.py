@@ -6,19 +6,65 @@ import threading
 import contextlib
 
 
-__all__ = ['is_py27', 'PYJOYSTICK_DIR', 'deadband', 'change_path', 'rescale', 'PeriodicThread']
+__all__ = ['is_py27', 'files', 'as_file', 'deadband', 'change_path', 'rescale', 'PeriodicThread']
 
 
 is_py27 = sys.version_info < (3, 0)
 
-PYJOYSTICK_DIR = os.path.dirname(sys.executable)
 try:
-    if getattr(sys, 'frozen', False):
-        PYJOYSTICK_DIR = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
-    else:
-        PYJOYSTICK_DIR = os.path.dirname(os.path.abspath(__file__))
-except (NameError, AttributeError, Exception):
-    pass
+    from importlib.resources import files, as_file
+    PYJOYSTICK_DIR = str(files('pyjoystick'))
+except (ImportError, Exception):
+    try:
+        from importlib_resources import files, as_file
+        PYJOYSTICK_DIR = str(files('pyjoystick'))
+    except (ImportError, Exception):
+        import inspect
+        from pathlib import Path
+        Traversable = Path
+
+        def files(module):
+            if isinstance(module, str):
+                if '.' in module:
+                    # Import the top level package and manually add a directory for each "."
+                    toplvl, remain = module.split('.', 1)
+                else:
+                    toplvl, remain = module, ''
+
+                # Get or import the module
+                try:
+                    module = sys.modules[toplvl]
+                    path = Path(inspect.getfile(module))
+                except (KeyError, Exception):
+                    try:
+                        module = __import__(toplvl)
+                        path = Path(inspect.getfile(module))
+                    except (ImportError, Exception):
+                        module = toplvl
+                        path = Path(module)
+
+                # Get the path of the module
+                if path.with_suffix('').name == '__init__':
+                    path = path.parent
+
+                # Find the path from the top level module
+                for pkg in remain.split('.'):
+                    path = path.joinpath(pkg)
+            else:
+                path = Path(inspect.getfile(module))
+            if path.with_suffix('').name == '__init__':
+                path = path.parent
+            return path
+
+        @contextlib.contextmanager
+        def as_file(path):
+            p = str(path)
+            if not os.path.exists(p):
+                p = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(sys.executable)), str(path))
+            if not os.path.exists(p):
+                p = os.path.join(getattr(sys, '_MEIPASS', os.path.dirname(sys.executable)), '', str(path))
+
+            yield p
 
 
 def deadband(val, dead=0.2, scale=1):
