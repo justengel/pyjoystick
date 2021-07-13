@@ -13,11 +13,9 @@ is_py27 = sys.version_info < (3, 0)
 
 try:
     from importlib.resources import files, as_file
-    PYJOYSTICK_DIR = str(files('pyjoystick'))
 except (ImportError, Exception):
     try:
         from importlib_resources import files, as_file
-        PYJOYSTICK_DIR = str(files('pyjoystick'))
     except (ImportError, Exception):
         import inspect
         from pathlib import Path

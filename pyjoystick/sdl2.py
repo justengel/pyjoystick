@@ -9,12 +9,15 @@ from pyjoystick.stash import Stash
 from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 # ========== SDL2 Pathing ==========
-with as_file(files('pyjoystick')) as PYJOYSTICK_DIR:  # Find SDL2 resource files properly
+# Find SDL2 resource files properly. Python 3.9+ can use this to find the proper path even if zipped.
+PYJOYSTICK_DIR = files('pyjoystick')
+with as_file(PYJOYSTICK_DIR.joinpath('sdl2_win64/SDL2.dll')) as sdl2_64, \
+        as_file(PYJOYSTICK_DIR.joinpath('sdl2_win32/SDL2.dll')) as sdl2_32:
     if 'windows' in platform.architecture()[1].lower():
         if '64' in platform.architecture()[0]:
-            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.join(PYJOYSTICK_DIR, 'sdl2_win64'))
+            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(sdl2_64))
         else:
-            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.join(PYJOYSTICK_DIR, 'sdl2_win32'))
+            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(sdl2_32))
 
     import sdl2
 # ========== END SDL2 Pathing ==========
