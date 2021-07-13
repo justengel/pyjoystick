@@ -1,5 +1,5 @@
 import asyncio
-from pyjoystick.sdl2 import Key, Joystick, run_event_loop, async_event_loop
+from pyjoystick.sdl2_async import Key, Joystick, run_event_loop
 
 
 if __name__ == '__main__':
@@ -20,26 +20,29 @@ if __name__ == '__main__':
     monitor_keytypes = [Key.AXIS]
 
     clients = []
+    loop = asyncio.get_event_loop()
 
-    async def send(msg: Union[str, bytes]):
+    async def send(msg: Union[str, bytes], newline=''):
         str_msg = msg
         if isinstance(msg, str):
             msg = msg.encode()
         else:
             str_msg = msg.decode()
 
-        for client in clients:
+        cs = [c for c in clients]
+        for client in cs:
             client.write(msg)
-        await asyncio.gather((client.drain() for client in clients))
-        print(str_msg + '\n', end='\n', flush=True)
+            # await client.drain()
+        await asyncio.gather(*(client.drain() for client in cs), loop=loop)
+        print('\r', str_msg, end=newline, flush=True)
 
 
     async def print_add(joy):
-        await send('ADD: ' + str(joy))
+        await send('ADD: ' + str(joy), newline='\n')
 
 
     async def print_remove(joy):
-        await send('REMOVE: ' + str(joy))
+        await send('REMOVE: ' + str(joy), newline='\n')
 
 
     async def key_received(key):
@@ -82,14 +85,13 @@ if __name__ == '__main__':
 
     async def main():
         await asyncio.gather(run_server(),
-                             async_event_loop(print_add, print_remove, key_received))
+                             run_event_loop(print_add, print_remove, key_received))
 
-
-    loop = asyncio.get_event_loop()
+    # Run the event loop
     loop.run_until_complete(main())
 
     for client in clients:
         print('Close the connection')
         client.close()
-        await client.wait_closed()
+        loop.run_until_complete(client.wait_closed())
     loop.close()

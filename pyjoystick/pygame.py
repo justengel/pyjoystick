@@ -209,7 +209,7 @@ def refresh_joysticks(joysticks=None):
 def get_events():
     try:
         return pygame.event.get(pump=True)
-    except:
+    except (AttributeError, Exception):
         pygame.event.pump()
         return pygame.event.get()
 

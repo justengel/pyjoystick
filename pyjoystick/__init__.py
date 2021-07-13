@@ -7,9 +7,14 @@ from .interface import Key, Joystick
 
 try:
     from .sdl2 import Joystick as SDLJoystick, run_event_loop as run_sdl_loop
-except:
+except (ImportError, Exception):
     SDLJoystick = None
     run_sdl_loop = None
+
+try:
+    from .sdl2_async import run_event_loop as run_sdl_loop_async
+except (ImportError, SyntaxError, Exception):
+    run_sdl_loop_async = None
 
 from .run_thread import ThreadEventManager
 from .run_process import MultiprocessingEventManager
