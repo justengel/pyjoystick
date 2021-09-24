@@ -689,7 +689,10 @@ class EventLoop:
 
 
 class JoystickEventLoop(EventLoop):
-    def __init__(self, add=None, remove=None, handle_key=None, key_from_event=joystick_key_from_event,
+
+    default_key_from_event = staticmethod(joystick_key_from_event)
+
+    def __init__(self, add=None, remove=None, handle_key=None, key_from_event=None,
                  alive=None, event=None, timeout=2000, **kwargs):
         """Initialize the event loop.
 
@@ -697,13 +700,15 @@ class JoystickEventLoop(EventLoop):
             add (function/callable)[None]: Function that takes in a joystick on a SDL_JOYDEVICEADDED event.
             remove (function/callable)[None]: Function that takes in a joystick on a SDL_JOYDEVICEREMOVED event.
             handle_key (function/callable)[None]: Function that takes in Key when other events occur.
-            key_from_event (function/callable)[joystick_key_from_event]: Function that takes an event and
+            key_from_event (function/callable)[None]: Function that takes an event and
                 turns it into a Key if possible.
             alive (function/threading.Event)[None]: Function that returns True to keep running or threading.Event that
                 is alive when set.
             event (sdl2.SDL_Event)[None]: Event object memory to continually populate with new events.
             timeout (int)[2000]: Milliseconds to wait for an event.
         """
+        if key_from_event is None:
+            key_from_event = self.default_key_from_event
         super().__init__(alive, event, timeout, **kwargs)
 
         # Set callback functions
@@ -740,8 +745,11 @@ class JoystickEventLoop(EventLoop):
             self.handle_key(key)
 
 
-class ControllerEventLoop(EventLoop):
-    def __init__(self, add=None, remove=None, handle_key=None, key_from_event=controller_key_from_event,
+class ControllerEventLoop(JoystickEventLoop):
+
+    default_key_from_event = staticmethod(controller_key_from_event)
+
+    def __init__(self, add=None, remove=None, handle_key=None, key_from_event=None,
                  alive=None, event=None, timeout=2000, **kwargs):
         """Initialize the event loop.
 
@@ -749,43 +757,23 @@ class ControllerEventLoop(EventLoop):
             add (function/callable)[None]: Function that takes in a joystick on a SDL_JOYDEVICEADDED event.
             remove (function/callable)[None]: Function that takes in a joystick on a SDL_JOYDEVICEREMOVED event.
             handle_key (function/callable)[None]: Function that takes in Key when other events occur.
-            key_from_event (function/callable)[controller_key_from_event]: Function that takes an event and
+            key_from_event (function/callable)[None]: Function that takes an event and
                 turns it into a Key if possible.
             alive (threading.Event/function/callable)[None]: threading.Event that is alive when set or function that
                 returns True to keep running.
             event (sdl2.SDL_Event)[None]: Event object memory to continually populate with new events.
             timeout (int)[2000]: Milliseconds to wait for an event.
         """
-        super().__init__(alive, event, timeout, **kwargs)
-
-        # Set callback functions
-        self.add = add
-        self.remove = remove
-        self.handle_key = handle_key
-        self.key_from_event = key_from_event
+        super().__init__(add=add, remove=remove, handle_key=handle_key, key_from_event=key_from_event,
+                         alive=alive, event=event, timeout=timeout, **kwargs)
 
         # Register base events
-        self.register(sdl2.SDL_CONTROLLERDEVICEADDED, self.on_add)
-        self.register(sdl2.SDL_CONTROLLERDEVICEREMOVED, self.on_remove)
         self.register(sdl2.SDL_CONTROLLERDEVICEREMAPPED, self.on_mapped)
-        self.register(None, self.on_key_event)  # Every other event
 
     def get_joystick(self, event):
         """Return the joystick for this event"""
         # NOTE: event.cdevice.which is the id for SDL_GameControllerOpen() and for SDL_GameControllerFromInstanceID()
         return Joystick(instance_id=event.cdevice.which)
-
-    def on_add(self, event):
-        try:
-            self.add(self.get_joystick(event))
-        except:
-            pass
-
-    def on_remove(self, event):
-        try:
-            self.remove(self.get_joystick(event))
-        except:
-            pass
 
     def on_mapped(self, event):
         try:
@@ -795,11 +783,6 @@ class ControllerEventLoop(EventLoop):
             joy.key_mapping = {v: k for k, v in joy.controller_mapping.items()}
         except:
             pass
-
-    def on_key_event(self, event):
-        key = self.key_from_event(event, self.get_joystick(event))
-        if key is not None:
-            self.handle_key(key)
 
 
 def run_event_loop(add_joystick, remove_joystick, handle_key_event, alive=None, key_from_event=None, **kwargs):

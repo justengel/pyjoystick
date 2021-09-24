@@ -1,4 +1,4 @@
-from pyjoystick.sdl2 import sdl2, Key, Joystick, run_controller_event_loop, get_mapping, set_mapping
+from pyjoystick.sdl2 import sdl2, Key, Joystick, ControllerEventLoop, get_mapping, set_mapping
 
 
 if __name__ == '__main__':
@@ -47,4 +47,4 @@ def key_received(key):
         print('Key:', key_name, 'Value:', key.value, 'Joystick:', key.joystick)
 
 
-run_controller_event_loop(print_add, print_remove, key_received)
+ControllerEventLoop(print_add, print_remove, key_received).run()
