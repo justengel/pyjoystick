@@ -6,10 +6,10 @@
 import os
 import threading
 from qtpy import QtCore, QtGui, QtWidgets
+import resource_man
 
 from pyjoystick.interface import Joystick
 from pyjoystick.qt.widgets import AxisWidget, ButtonWidget, HatWidget, SpinSlider, LED
-from pyjoystick.qt.keys_trigger import RESOURCE_DIR
 
 
 __all__ = ["JOYSTICK_ACTIVE_IMG", "JOYSTICK_INACTIVE_IMG",
@@ -17,8 +17,8 @@ __all__ = ["JOYSTICK_ACTIVE_IMG", "JOYSTICK_INACTIVE_IMG",
 
 
 # ========== ICONS ==========
-JOYSTICK_ACTIVE_IMG = os.path.join(RESOURCE_DIR, "gamepad_active.png")
-JOYSTICK_INACTIVE_IMG = os.path.join(RESOURCE_DIR, "gamepad_inactive.png")
+JOYSTICK_ACTIVE_IMG = resource_man.register('pyjoystick.resources', "gamepad_active.png")
+JOYSTICK_INACTIVE_IMG = resource_man.register('pyjoystick.resources', "gamepad_inactive.png")
 # ========== END ICONS ==========
 
 
@@ -26,6 +26,9 @@ class JoystickKeyMapperMixin(object):
     """Help the user map the keys."""
 
     Joystick = Joystick
+
+    JOYSTICK_ACTIVE_IMG = JOYSTICK_ACTIVE_IMG
+    JOYSTICK_INACTIVE_IMG = JOYSTICK_INACTIVE_IMG
 
     def __init__(self, joystick=None, event_mngr=None, **kwargs):
         super().__init__()

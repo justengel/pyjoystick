@@ -14,18 +14,17 @@ import copy
 import threading
 
 from qtpy import QtCore, QtGui, QtWidgets
+import resource_man
+from resource_man.qt import QIcon
 
-from pyjoystick.utils import PYJOYSTICK_DIR
 
-
-__all__ = ["RESOURCE_DIR", "KEYBOARD_ACTIVE_IMG", "KEYBOARD_INACTIVE_IMG",
+__all__ = ["KEYBOARD_ACTIVE_IMG", "KEYBOARD_INACTIVE_IMG",
            "BindKeys", "WASDController", "ArrowController", "GimbalController"]
 
 
 # ========== ICONS ==========
-RESOURCE_DIR = os.path.join(PYJOYSTICK_DIR, 'resources')
-KEYBOARD_ACTIVE_IMG = os.path.join(RESOURCE_DIR, "keyboard_active.png")
-KEYBOARD_INACTIVE_IMG = os.path.join(RESOURCE_DIR, "keyboard_inactive.png")
+KEYBOARD_ACTIVE_IMG = resource_man.register('pyjoystick.resources', "keyboard_active.png")
+KEYBOARD_INACTIVE_IMG = resource_man.register('pyjoystick.resources', "keyboard_inactive.png")
 # ========== END ICONS ==========
 
 
@@ -70,14 +69,14 @@ class BindKeys(QtCore.QObject):
     def init_icon(self):
         """Create the icon."""
         try:
-            self._active_icon = QtGui.QIcon(self.KEYBOARD_ACTIVE_IMG)
+            self._active_icon = QIcon(self.KEYBOARD_ACTIVE_IMG)
         except:
-            self._active_icon = QtGui.QIcon()
+            self._active_icon = QIcon()
             
         try:
-            self._inactive_icon = QtGui.QIcon(self.KEYBOARD_INACTIVE_IMG)
+            self._inactive_icon = QIcon(self.KEYBOARD_INACTIVE_IMG)
         except:
-            self._inactive_icon = QtGui.QIcon()
+            self._inactive_icon = QIcon()
  
         self.icon = QtWidgets.QPushButton(self._inactive_icon, "", None)
         self.icon.is_gamepad = self

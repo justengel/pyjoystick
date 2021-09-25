@@ -3,22 +3,26 @@ import sys
 import platform
 import ctypes
 import threading
+import resource_man
 
-from pyjoystick.utils import files, as_file, change_path, rescale
+from pyjoystick.utils import is_64_bit, check_os, rescale
 from pyjoystick.stash import Stash
 from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 # ========== SDL2 Pathing ==========
-# Find SDL2 resource files properly. Python 3.9+ can use this to find the proper path even if zipped.
-PYJOYSTICK_DIR = files('pyjoystick')
-with as_file(PYJOYSTICK_DIR.joinpath('sdl2_win64/SDL2.dll')) as sdl2_64, \
-        as_file(PYJOYSTICK_DIR.joinpath('sdl2_win32/SDL2.dll')) as sdl2_32:
-    if 'windows' in platform.architecture()[1].lower():
-        if '64' in platform.architecture()[0]:
-            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(sdl2_64))
-        else:
-            os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(sdl2_32))
+# Find SDL2 resource files properly.
+SDL2_WIN32 = resource_man.register('pyjoystick.sdl2_win32', 'SDL2.dll')
+SDL2_WIN64 = resource_man.register('pyjoystick.sdl2_win64', 'SDL2.dll')
 
+if check_os('win') and is_64_bit():
+    with SDL2_WIN64.as_file() as sdl_dll:
+        os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(str(sdl_dll)))
+        import sdl2
+elif check_os('win'):
+    with SDL2_WIN32.as_file() as sdl_dll:
+        os.environ.setdefault('PYSDL2_DLL_PATH', os.path.dirname(str(sdl_dll)))
+        import sdl2
+else:
     import sdl2
 # ========== END SDL2 Pathing ==========
 
@@ -64,15 +68,17 @@ class Joystick(BaseJoystick):
                     try:
                         if sdl2.SDL_JoystickName(raw_joystick).decode('utf-8') == identifier:
                             joy.joystick = raw_joystick
+                            instance_id = i
                             break
                     except:
                         pass
             else:
+                instance_id = identifier
                 joy.joystick = sdl2.SDL_JoystickOpen(identifier)
             # print('ID:', raw_joystick, SDL_JoystickGetAttached(raw_joystick))
 
         try:
-            joy.identifier = sdl2.SDL_JoystickID(sdl2.SDL_JoystickInstanceID(joy.joystick)).value
+            joy.identifier = sdl2.SDL_JoystickID(instance_id).value
             # joy.identifier = SDL_JoystickInstanceID(raw_joystick)
             joy.name = sdl2.SDL_JoystickName(joy.joystick).decode('utf-8')
             joy.numaxes = sdl2.SDL_JoystickNumAxes(joy.joystick)
@@ -131,36 +137,39 @@ class Joystick(BaseJoystick):
             pass
 
 
-def get_init(module=sdl2.SDL_INIT_GAMECONTROLLER):
-    """Return if the given module was initialized.
+def get_init(*modules):
+    """Return if the given module was initialized."""
+    if len(modules) == 0:
+        modules = (sdl2.SDL_INIT_GAMECONTROLLER, sdl2.SDL_INIT_JOYSTICK)
+    was_init = True
+    for module in modules:
+        was_init = was_init and sdl2.SDL_WasInit(module)
+    return was_init
 
-    Note:
-        SDL_INIT_GAMECONTROLLER also initializes the joystick subsystem.
-    """
-    return sdl2.SDL_WasInit(module)
 
-
-def init(module=sdl2.SDL_INIT_GAMECONTROLLER, *args, **kwargs):
+def init(*modules):
     """Initialize the given module.
 
     Note:
         SDL_INIT_GAMECONTROLLER also initializes the joystick subsystem.
     """
-    if get_init(module):
-        quit(module)
-    sdl2.SDL_Init(module)
+    if len(modules) == 0:
+        modules = (sdl2.SDL_INIT_GAMECONTROLLER, sdl2.SDL_INIT_JOYSTICK)
+    for module in modules:
+        if get_init(module):
+            quit(module)
+        sdl2.SDL_Init(module)
 
 
-def quit(module=sdl2.SDL_INIT_EVERYTHING):
-    """Quit the given module.
-
-    Note:
-        SDL_INIT_GAMECONTROLLER also initializes the joystick subsystem.
-    """
-    try:
-        sdl2.SDL_QUIT(module)
-    except:
-        pass
+def quit(*modules):
+    """Quit the given module."""
+    if len(modules) == 0:
+        modules = (sdl2.SDL_INIT_EVERYTHING,)
+    for module in modules:
+        try:
+            sdl2.SDL_QUIT(module)
+        except:
+            pass
 
 
 def get_guid(joystick):
@@ -584,9 +593,6 @@ class EventLoop:
             event (sdl2.SDL_Event)[None]: Event object memory to continually populate with new events.
             timeout (int)[2000]: Milliseconds to wait for an event.
         """
-        if not get_init():
-            init()
-
         if alive is None:
             alive = threading.Event()
             alive.set()
@@ -675,6 +681,8 @@ class EventLoop:
 
     def __iter__(self):
         """Return this object as an iterator for use with the for loop or next()"""
+        if not get_init():
+            init()
         return self
 
     def __next__(self):

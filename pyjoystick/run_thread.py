@@ -358,11 +358,11 @@ if __name__ == '__main__':
     import time
     import argparse
     from pyjoystick import Key, ButtonRepeater, HatRepeater, ButtonHatRepeater
-    try:
-        from pyjoystick.sdl2 import Joystick as SDLJoystick, run_event_loop as run_sdl_loop
-    except:
-        SDLJoystick = None
-        run_sdl_loop = None
+    # try:
+    from pyjoystick.sdl2 import Joystick as SDLJoystick, run_event_loop as run_sdl_loop
+    # except (ImportError, Exception) as err:
+    #     SDLJoystick = None
+    #     run_sdl_loop = None
     try:
         from pyjoystick.pygame import Joystick as PygameJoystick, run_event_loop as run_pygame_loop
     except:

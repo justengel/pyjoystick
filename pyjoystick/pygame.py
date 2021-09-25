@@ -3,12 +3,9 @@ import sys
 import time
 import threading
 
-from pyjoystick.utils import files, as_file, change_path, rescale
+from pyjoystick.utils import rescale
 
-with as_file(files('pyjoystick')) as PYJOYSTICK_DIR:
-    with change_path(PYJOYSTICK_DIR):
-        # os.environ.setdefault('SDL_VIDEODRIVER', 'dummy')
-        import pygame
+import pygame
 
 from pyjoystick.stash import Stash
 from pyjoystick.interface import HatValues, Key, Joystick as BaseJoystick
