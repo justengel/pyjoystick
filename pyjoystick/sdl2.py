@@ -3,7 +3,6 @@ import sys
 import platform
 import ctypes
 import threading
-import resource_man
 
 from pyjoystick.utils import is_64_bit, check_os, rescale
 from pyjoystick.stash import Stash
@@ -11,8 +10,8 @@ from pyjoystick.interface import Key, Joystick as BaseJoystick
 
 # ========== SDL2 Pathing ==========
 # Find SDL2 resource files properly.
-SDL2_WIN32 = resource_man.register('pyjoystick.sdl2_win32', 'SDL2.dll')
-SDL2_WIN64 = resource_man.register('pyjoystick.sdl2_win64', 'SDL2.dll')
+from pyjoystick.sdl2_win32 import SDL2_WIN32
+from pyjoystick.sdl2_win64 import SDL2_WIN64
 
 if check_os('win') and is_64_bit():
     with SDL2_WIN64.as_file() as sdl_dll:

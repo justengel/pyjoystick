@@ -14,18 +14,12 @@ import copy
 import threading
 
 from qtpy import QtCore, QtGui, QtWidgets
-import resource_man
 from resource_man.qt import QIcon
+from pyjoystick.resources import KEYBOARD_ACTIVE_IMG, KEYBOARD_INACTIVE_IMG
 
 
 __all__ = ["KEYBOARD_ACTIVE_IMG", "KEYBOARD_INACTIVE_IMG",
            "BindKeys", "WASDController", "ArrowController", "GimbalController"]
-
-
-# ========== ICONS ==========
-KEYBOARD_ACTIVE_IMG = resource_man.register('pyjoystick.resources', "keyboard_active.png")
-KEYBOARD_INACTIVE_IMG = resource_man.register('pyjoystick.resources', "keyboard_inactive.png")
-# ========== END ICONS ==========
 
 
 class BindKeys(QtCore.QObject):
