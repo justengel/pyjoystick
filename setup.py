@@ -77,7 +77,7 @@ if __name__ == "__main__":
 
           # options to install extra requirements
           install_requires=[
-              'resource_man>=2.0.7',
+              'resource_man>=2.1.3',
               'pysdl2>=0.9.6',
               ],
           extras_require={
