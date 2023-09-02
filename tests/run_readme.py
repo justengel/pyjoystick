@@ -11,9 +11,15 @@ def run_simple_example():
 
     def key_received(key):
         print('Key:', key, 'Joystick:', key.joystick)
+        if key.keytype == Key.BUTTON and key.number == 0:
+            if key.value == 1:
+                # Button 0 pressed
+                print("Do action!")
+            else:
+                # Button 0 released
+                pass
 
     run_event_loop(print_add, print_remove, key_received)
-
 
 def run_qt_integration():
     # App with a green ball in the center that moves when you press the HAT buttons
@@ -118,5 +124,5 @@ def run_qt_integration():
 
 
 if __name__ == '__main__':
-    # run_simple_example()
-    run_qt_integration()
+    run_simple_example()
+    # run_qt_integration()

@@ -20,6 +20,13 @@ Simple Example
 
     def key_received(key):
         print('Key:', key)
+        if key.keytype == Key.BUTTON and key.number == 0:
+            if key.value == 1:
+                # Button 0 pressed
+                print("Do action!")
+            else:
+                # Button 0 released
+                pass
 
     run_event_loop(print_add, print_remove, key_received)
 
